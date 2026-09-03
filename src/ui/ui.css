@@ -1,0 +1,233 @@
+* {
+  box-sizing: border-box;
+}
+
+/* Author rules on .screen (display:flex) have the same specificity as the
+   UA stylesheet's [hidden] rule and would otherwise win, since author
+   styles always beat user-agent styles regardless of specificity. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0b0d12;
+  color: #f1faee;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+#game-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+#ui-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.screen--menu,
+.screen--select,
+.screen--gameover {
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 20%, rgba(29, 53, 87, 0.55), rgba(11, 13, 18, 0.92));
+}
+
+.title {
+  font-size: clamp(2.2rem, 8vw, 3.4rem);
+  letter-spacing: 0.08em;
+  margin: 0;
+  color: #e63946;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+.subtitle {
+  margin: -8px 0 8px;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+.high-score {
+  opacity: 0.85;
+  margin: 0;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 14px 32px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+}
+
+.btn--primary {
+  background: #e63946;
+  color: white;
+  box-shadow: 0 6px 0 #9c1c27;
+}
+
+.btn--primary:active {
+  box-shadow: 0 2px 0 #9c1c27;
+  transform: translateY(4px);
+}
+
+.btn--secondary {
+  background: transparent;
+  color: #f1faee;
+  border: 1px solid rgba(241, 250, 238, 0.4);
+}
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  max-width: 900px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid var(--accent, #457b9d);
+  border-radius: 14px;
+  padding: 16px;
+  width: 190px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.card:hover,
+.card:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+}
+
+.card__swatch {
+  width: 100%;
+  height: 46px;
+  border-radius: 8px;
+  background: var(--accent, #457b9d);
+  margin-bottom: 10px;
+}
+
+.card__name {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.stat-row span {
+  width: 76px;
+  flex-shrink: 0;
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  background: var(--accent, #457b9d);
+}
+
+.final-score {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.new-record {
+  color: #e9c46a;
+  font-weight: 700;
+  margin: 0;
+}
+
+.screen--hud {
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.hud-controls {
+  align-self: center;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 12px;
+}
+
+.hud-btn {
+  pointer-events: auto;
+  border: none;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  font-size: 1.4rem;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  backdrop-filter: blur(2px);
+}
+
+.hud-btn--brake {
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  background: rgba(230, 57, 70, 0.75);
+  font-size: 0.85rem;
+  font-weight: 700;
+}

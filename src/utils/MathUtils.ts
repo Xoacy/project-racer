@@ -1,0 +1,24 @@
+export function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/** Framerate-independent exponential smoothing: moves `current` towards
+ *  `target` at `rate` (1/seconds). Use this instead of a fixed-per-frame
+ *  lerp everywhere in the juice/physics layer so the game feels the same
+ *  at 30fps and 120fps. */
+export function expSmooth(current: number, target: number, rate: number, dt: number): number {
+  const t = 1 - Math.exp(-rate * dt);
+  return lerp(current, target, t);
+}
+
+export function randRange(min: number, max: number): number {
+  return min + Math.random() * (max - min);
+}
+
+export function randInt(minInclusive: number, maxInclusive: number): number {
+  return Math.floor(randRange(minInclusive, maxInclusive + 1));
+}
