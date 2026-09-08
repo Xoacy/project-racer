@@ -89,9 +89,19 @@ export class Track {
       segment.group.position.z += delta;
       furthestAheadZ = Math.min(furthestAheadZ, segment.group.position.z);
     }
+
+    const halfLength = this.map.segmentLength / 2;
     for (const segment of this.segments) {
-      const trailingEdgeZ = segment.group.position.z + this.map.segmentLength / 2;
-      if (trailingEdgeZ > WORLD.cullDistanceBehind) {
+      // A segment spans [z - halfLength, z + halfLength]. Its front edge
+      // (z - halfLength, the smaller/more-negative side) is the LAST part
+      // to clear any given point as the world scrolls, so recycling must
+      // wait for THAT edge to pass the cull line — not the back edge. With
+      // segmentLength (40) bigger than cullDistanceBehind (12), checking
+      // the back edge recycled a segment while its front edge — the part
+      // still covering the player at z=0 — hadn't passed yet, popping the
+      // road out from under the car mid-flight.
+      const frontEdgeZ = segment.group.position.z - halfLength;
+      if (frontEdgeZ > WORLD.cullDistanceBehind) {
         segment.group.position.z = furthestAheadZ - this.map.segmentLength;
         furthestAheadZ = segment.group.position.z;
       }

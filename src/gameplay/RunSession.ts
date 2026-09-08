@@ -65,6 +65,7 @@ export class RunSession {
     if (this.ended) return false;
 
     this.difficulty.update(dt);
+    this.inputManager.update(dt);
 
     const laneRequests = this.inputManager.consumeLaneRequests();
     const braking = this.inputManager.isBraking();

@@ -2,6 +2,11 @@ import type { InputManager } from './InputManager';
 import type { InputSource } from './InputTypes';
 
 const SWIPE_THRESHOLD_PX = 40;
+/** Extra pixels of swipe distance, beyond the initial threshold, that add
+ *  one more lane to the jump — lets a long swipe cross several lanes in a
+ *  single continuous gesture instead of one swipe per lane. */
+const PX_PER_EXTRA_LANE = 70;
+const MAX_LANES_PER_SWIPE = 3;
 
 /**
  * Swipe-left/right on the game surface to change lanes. The brake button
@@ -43,6 +48,10 @@ export class TouchSource implements InputSource {
     const dx = touch.clientX - this.startX;
     const dy = touch.clientY - this.startY;
     if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy)) return;
-    this.manager.requestLaneChange(dx > 0 ? 1 : -1);
+
+    const direction = dx > 0 ? 1 : -1;
+    const extraDistance = Math.abs(dx) - SWIPE_THRESHOLD_PX;
+    const lanes = Math.min(MAX_LANES_PER_SWIPE, 1 + Math.floor(extraDistance / PX_PER_EXTRA_LANE));
+    for (let i = 0; i < lanes; i++) this.manager.requestLaneChange(direction);
   };
 }

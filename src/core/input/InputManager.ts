@@ -2,6 +2,7 @@ import type { LaneDirection, InputSource } from './InputTypes';
 import { KeyboardSource } from './KeyboardSource';
 import { TouchSource } from './TouchSource';
 import { TiltSource } from './TiltSource';
+import { PLAYER_TUNING } from '@/config/constants';
 
 /**
  * Unified input aggregator. Every control scheme (keyboard, swipe, tilt)
@@ -13,6 +14,13 @@ export class InputManager {
   private pendingLaneRequests: LaneDirection[] = [];
   private braking = false;
   private accelerating = false;
+
+  // Auto-repeat while a direction is held (keyboard held down, HUD button
+  // held) — see PLAYER_TUNING.laneChangeInputCooldown. The initial press
+  // always fires immediately via requestLaneChange(); this only governs
+  // repeats for as long as the source keeps the hold active.
+  private heldDirection: LaneDirection | null = null;
+  private heldTimer = 0;
 
   private keyboard: KeyboardSource;
   private touch: TouchSource;
@@ -37,6 +45,26 @@ export class InputManager {
   /** Called by input sources. */
   requestLaneChange(direction: LaneDirection): void {
     this.pendingLaneRequests.push(direction);
+  }
+
+  /** Called by "hold-capable" sources (keyboard, HUD lane buttons) on
+   *  press/release so a sustained hold can keep stepping across lanes.
+   *  Pass null when nothing is held (e.g. key released, or two opposing
+   *  directions held at once — ambiguous, so no auto-repeat). */
+  setLaneHeld(direction: LaneDirection | null): void {
+    this.heldDirection = direction;
+    this.heldTimer = 0;
+  }
+
+  /** Must be called once per gameplay frame (before consumeLaneRequests)
+   *  to drive the hold-to-repeat timer. */
+  update(dt: number): void {
+    if (this.heldDirection === null) return;
+    this.heldTimer += dt;
+    if (this.heldTimer >= PLAYER_TUNING.laneChangeInputCooldown) {
+      this.heldTimer -= PLAYER_TUNING.laneChangeInputCooldown;
+      this.requestLaneChange(this.heldDirection);
+    }
   }
 
   setBraking(value: boolean): void {

@@ -13,7 +13,6 @@ export class PlayerVehicle {
   private laneCount: number;
   private laneWidth: number;
 
-  private currentLaneIndex: number;
   private targetLaneIndex: number;
   private currentX: number;
   private previousX: number;
@@ -26,9 +25,8 @@ export class PlayerVehicle {
   constructor(private vehicle: VehicleConfig, map: MapConfig) {
     this.laneCount = map.lanes.count;
     this.laneWidth = map.lanes.width;
-    this.currentLaneIndex = Math.floor(this.laneCount / 2);
-    this.targetLaneIndex = this.currentLaneIndex;
-    this.currentX = this.laneIndexToX(this.currentLaneIndex);
+    this.targetLaneIndex = Math.floor(this.laneCount / 2);
+    this.currentX = this.laneIndexToX(this.targetLaneIndex);
     this.previousX = this.currentX;
     this.speed = vehicle.physics.maxSpeed * 0.45;
     this.previousSpeed = this.speed;
@@ -39,10 +37,15 @@ export class PlayerVehicle {
   }
 
   update(dt: number, laneRequests: LaneDirection[], braking: boolean, targetSpeed: number): void {
+    // Each request just nudges targetLaneIndex by one lane (clamped to the
+    // track's bounds). Crossing several lanes in one continuous glide is
+    // just several requests landing before the glide finishes — the
+    // easing below always chases whatever targetLaneIndex currently is,
+    // so it naturally handles a target that keeps moving (or reverses
+    // mid-transition) without any special-casing here.
     for (const dir of laneRequests) {
       this.targetLaneIndex = clamp(this.targetLaneIndex + dir, 0, this.laneCount - 1);
     }
-    this.currentLaneIndex = this.targetLaneIndex;
 
     this.previousX = this.currentX;
     const targetX = this.laneIndexToX(this.targetLaneIndex);

@@ -41,8 +41,11 @@ export const JUICE_TUNING = {
 
 /** Lane-change and player-controller tuning not specific to one vehicle. */
 export const PLAYER_TUNING = {
-  /** Minimum time (s) between two lane-change inputs, to stop double-taps
-   *  from queuing two lane shifts at once. */
+  /** While a direction is held (keyboard held down, HUD button held), this
+   *  is the interval (s) between auto-repeated lane-change steps — lets
+   *  the player cross several lanes in one continuous hold instead of one
+   *  discrete press per lane. The first step on press-down always fires
+   *  immediately regardless of this cooldown. */
   laneChangeInputCooldown: 0.12,
 };
 

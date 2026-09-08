@@ -51,10 +51,20 @@ export class HUDScreen implements Screen {
     leftBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
       this.inputManager.requestLaneChange(-1);
+      this.inputManager.setLaneHeld(-1);
+    });
+    leftBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.inputManager.setLaneHeld(null);
     });
     rightBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
       this.inputManager.requestLaneChange(1);
+      this.inputManager.setLaneHeld(1);
+    });
+    rightBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.inputManager.setLaneHeld(null);
     });
     brakeBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
