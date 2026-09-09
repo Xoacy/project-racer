@@ -60,20 +60,23 @@ export const SCORE_TUNING = {
   pointsPerMeter: 1,
 };
 
-/** AI traffic (NPC) tuning — car-following and occasional lane changes.
- *  See gameplay/NpcDriver.ts for how these are used. */
+/** AI traffic (NPC) tuning that stays the same across every map — the
+ *  map-specific knobs (traffic speed, lane-change chance, safe following
+ *  time) live in MapConfig.traffic instead, since those are meant to vary
+ *  per map/mode. See gameplay/NpcDriver.ts for how these are used. */
 export const NPC_TUNING = {
   /** Intelligent Driver Model params (Treiber et al., 2000) — a compact
    *  car-following formula: an NPC accelerates toward its own cruise
    *  speed on an open road, and smoothly brakes to keep a safe,
    *  speed-dependent gap behind whichever vehicle is directly ahead of it
    *  in its lateral path. Composes correctly across a chain of several
-   *  vehicles with no special-casing. */
+   *  vehicles with no special-casing. `timeHeadway` (the map-specific
+   *  "safety distance" knob) is passed in per-NPC from
+   *  MapConfig.traffic.safeFollowSeconds instead of living here. */
   idm: {
     maxAcceleration: 2.2, // m/s^2
     comfortableDeceleration: 3.5, // m/s^2 (positive value)
     minGap: 3.5, // meters, desired bumper-to-bumper gap at a dead stop
-    timeHeadway: 1, // seconds of following distance to keep at current speed
     accelerationExponent: 4,
   },
   /** Beyond this lateral distance (plus both half-widths), two vehicles
@@ -97,11 +100,6 @@ export const NPC_TUNING = {
     /** Random interval (s) between lane-change decision checks. */
     checkIntervalMin: 4,
     checkIntervalMax: 11,
-    /** Chance [0,1] that a decision check results in an actual attempt —
-     *  randomized per-NPC between these bounds (a "personality") so a
-     *  batch of traffic doesn't all decide to change lanes in lockstep. */
-    chanceMin: 0.15,
-    chanceMax: 0.5,
     /** Minimum bumper-to-bumper gap required in the target lane, ahead
      *  and behind, to commit to a lane change — behind gets a bit more
      *  room so an NPC never cuts someone off closely from the side. */

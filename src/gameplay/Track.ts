@@ -66,13 +66,32 @@ export class Track {
       group.add(shoulder);
     }
 
-    const lineMaterial = createSurfaceMaterial({ color: this.map.theme.laneLineColor });
+    const dashedLineMaterial = createSurfaceMaterial({ color: this.map.theme.laneLineColor });
+    const centerLineMaterial = createSurfaceMaterial({ color: this.map.theme.centerDividerColor });
+    const laneDirections = this.map.traffic.laneDirections;
+
     for (let lane = 1; lane < this.map.lanes.count; lane++) {
       const x = -this.roadWidth / 2 + lane * this.map.lanes.width;
+      // A dashed lane line between lanes running the same way; a solid
+      // double line — the universal "do not cross" road marking — where
+      // the direction actually flips (only ever happens on a two-way map).
+      const isDirectionBoundary = laneDirections[lane - 1] !== laneDirections[lane];
+
+      if (isDirectionBoundary) {
+        for (const offset of [-0.08, 0.08]) {
+          const solidGeometry = new THREE.PlaneGeometry(0.15, this.map.segmentLength);
+          const solid = new THREE.Mesh(solidGeometry, centerLineMaterial);
+          solid.rotation.x = -Math.PI / 2;
+          solid.position.set(x + offset, 0.01, 0);
+          group.add(solid);
+        }
+        continue;
+      }
+
       const dashCount = 4;
       for (let d = 0; d < dashCount; d++) {
         const dashGeometry = new THREE.PlaneGeometry(0.15, this.map.segmentLength / (dashCount * 2));
-        const dash = new THREE.Mesh(dashGeometry, lineMaterial);
+        const dash = new THREE.Mesh(dashGeometry, dashedLineMaterial);
         dash.rotation.x = -Math.PI / 2;
         dash.position.set(x, 0.01, -this.map.segmentLength / 2 + (d + 0.5) * (this.map.segmentLength / dashCount));
         group.add(dash);

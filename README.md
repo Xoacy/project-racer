@@ -123,11 +123,29 @@ E registra em `src/config/vehicles/index.ts` (importar + adicionar no array `VEH
 
 ### Um mapa novo
 
-Mesma lógica em `src/config/maps/`: cria um arquivo satisfazendo `MapConfig` (cores do tema, número de faixas, densidade de trânsito/cenário, multiplicador de dificuldade) e registra em `src/config/maps/index.ts`.
+Mesma lógica em `src/config/maps/`: cria um arquivo satisfazendo `MapConfig` (cores do tema, densidade de trânsito/cenário, multiplicador de dificuldade) e registra em `src/config/maps/index.ts`. Toda pista tem exatamente 4 faixas (`lanes.count: 4`) — isso é validado em tempo de carregamento.
+
+### Modos de tráfego (mão única vs. mão dupla)
+
+Um único array por mapa — `traffic.laneDirections` (4 entradas, uma por faixa: `1` = mesmo sentido do jogador, `-1` = contramão) — define o modo de tráfego inteiro. Não existe um "modo 1" e "modo 2" no código: é a mesma lógica de IA/colisão/renderização em ambos os casos, só reagindo a esse array.
+
+```ts
+laneDirections: [1, 1, 1, 1]     // highwayDusk — 4 faixas, mesmo sentido
+laneDirections: [1, 1, -1, -1]   // desertNoon — mão dupla, faixas 2-3 na contramão
+```
+
+O que isso muda sozinho, sem nenhum branch de "modo" em lugar nenhum:
+
+- `Track.ts` desenha uma linha dupla sólida (`theme.centerDividerColor`) exatamente onde o sentido muda, e faixa pontilhada normal em todo o resto.
+- `NpcDriver` só considera veículos do próprio sentido pra seguir (IDM) ou pra checar segurança de troca de faixa, e só escolhe faixa-alvo dentro do intervalo contíguo de faixas do seu próprio sentido (`allowedLaneMin`/`allowedLaneMax`, calculado por `gameplay/LaneDirections.ts` a partir do array) — nunca atravessa pra contramão.
+- `TrafficSpawner` inverte o sinal da contribuição de um NPC pro scroll compartilhado quando ele é contramão (`playerSpeed + speed` em vez de `playerSpeed - speed`), o que já faz a aproximação de frente ler como rápida e perigosa — a colisão em si não precisa de nenhuma lógica especial, é o mesmo `CollisionSystem` de sempre.
+- O jogador continua podendo dirigir pra qualquer uma das 4 faixas, incluindo a contramão — isso é proposital (é o risco/habilidade de dirigir em mão dupla), só os NPCs são presos ao próprio sentido.
+
+Outros knobs por mapa em `traffic`: `laneChangeChance` (chance de um NPC tentar trocar de faixa quando o timer aleatório dele dispara) e `safeFollowSeconds` (distância de segurança, em segundos de viagem, que um NPC tenta manter do carro à frente). O resto do modelo de car-following (IDM: aceleração máxima, frenagem confortável, gap mínimo) é global em `NPC_TUNING.idm`, já que são parâmetros do "modelo físico", não algo que varie por mapa.
 
 ### Ajustando a "sensação" do jogo
 
-Tudo que é "número de tuning" — ângulo máximo de roll, velocidade de lerp da câmera, curva de dificuldade, amplitude do balanço de suspensão — está centralizado em **`src/config/constants.ts`**, agrupado por sistema (`JUICE_TUNING`, `PLAYER_TUNING`, `DIFFICULTY_CURVE`, `SCORE_TUNING`, `WORLD`). Mexe ali, não no meio da lógica.
+Tudo que é "número de tuning" — ângulo máximo de roll, velocidade de lerp da câmera, curva de dificuldade, amplitude do balanço de suspensão, comportamento de IA do trânsito — está centralizado em **`src/config/constants.ts`**, agrupado por sistema (`JUICE_TUNING`, `NPC_TUNING`, `DIFFICULTY_CURVE`, `SCORE_TUNING`, `WORLD`). Mexe ali, não no meio da lógica.
 
 ## Estado atual e roadmap
 

@@ -4,27 +4,43 @@ import { createPlaceholderBox } from '@/render/PlaceholderFactory';
 import { WORLD } from '@/config/constants';
 import { randInt, randRange } from '@/utils/MathUtils';
 import { NpcDriver, type NpcNeighbor } from './NpcDriver';
+import { computeLaneGroups, findLaneGroup, type LaneGroup } from './LaneDirections';
 import type { TrafficInstance } from './types';
 
 const SPAWN_Z = -140;
 const TRAFFIC_DIMENSIONS = { width: 1.9, height: 1.5, length: 4.4 };
+/** Same-direction traffic. */
 const TRAFFIC_COLORS = [0xf1faee, 0xe9c46a, 0x8d99ae, 0x6b705c, 0xadb5bd];
+/** Oncoming traffic gets its own palette so a two-way map's contraflow
+ *  reads clearly even with placeholder boxes (real models will also be
+ *  rotated 180°, see spawnOne — but color is what actually reads as
+ *  "different" until then). */
+const ONCOMING_TRAFFIC_COLORS = [0xe63946, 0xd62828, 0x9d0208, 0xbc3908];
 const LANE_REPEAT_AVOID = 2; // don't spawn in the same lane more than this many times in a row
 
 /**
  * Spawns traffic and drives it with NpcDriver (car-following + occasional
  * lane changes — see NpcDriver.ts). Each instance scrolls at the
- * *relative* speed between the player and its own current speed, same
- * scroll-space frame as everything else, so gaps between traffic
- * instances stay physically meaningful for the AI's own following logic.
+ * *relative* speed between the player and its own current speed (sign
+ * flipped for oncoming traffic — see NpcDriver.update), same scroll-space
+ * frame as everything else, so gaps between traffic instances stay
+ * physically meaningful for the AI's own following logic.
+ *
+ * A map's `traffic.laneDirections` is the only thing that distinguishes a
+ * one-way map from a two-way one — this class has no notion of "mode",
+ * it just spawns each vehicle into whichever lane group its spawn lane
+ * belongs to (see LaneDirections.ts).
  */
 export class TrafficSpawner {
   readonly root = new THREE.Group();
   private active: TrafficInstance[] = [];
   private distanceSinceLastSpawn = 0;
   private recentLanes: number[] = [];
+  private laneGroups: LaneGroup[];
 
-  constructor(private map: MapConfig) {}
+  constructor(private map: MapConfig) {
+    this.laneGroups = computeLaneGroups(map.traffic.laneDirections);
+  }
 
   update(dt: number, playerSpeed: number, spawnIntervalFactor: number): void {
     this.distanceSinceLastSpawn += playerSpeed * dt;
@@ -43,6 +59,7 @@ export class TrafficSpawner {
       halfWidth: driver.halfWidth,
       halfLength: driver.halfLength,
       speed: driver.speed,
+      direction: driver.direction,
     }));
 
     for (let i = this.active.length - 1; i >= 0; i--) {
@@ -67,20 +84,35 @@ export class TrafficSpawner {
     this.recentLanes.push(lane);
     if (this.recentLanes.length > LANE_REPEAT_AVOID) this.recentLanes.shift();
 
-    const color = TRAFFIC_COLORS[randInt(0, TRAFFIC_COLORS.length - 1)];
+    const direction = this.map.traffic.laneDirections[lane];
+    const laneGroup = findLaneGroup(this.laneGroups, lane);
+    const isOncoming = direction === -1;
+
+    const colors = isOncoming ? ONCOMING_TRAFFIC_COLORS : TRAFFIC_COLORS;
+    const color = colors[randInt(0, colors.length - 1)];
     const mesh = createPlaceholderBox({ ...TRAFFIC_DIMENSIONS, color });
 
     const driver = new NpcDriver({
       laneCount: this.map.lanes.count,
       laneWidth: this.map.lanes.width,
       startLaneIndex: lane,
+      allowedLaneMin: laneGroup.minLaneIndex,
+      allowedLaneMax: laneGroup.maxLaneIndex,
+      direction,
       cruiseSpeed: randRange(this.map.traffic.minSpeed, this.map.traffic.maxSpeed),
       halfWidth: TRAFFIC_DIMENSIONS.width / 2,
       halfLength: TRAFFIC_DIMENSIONS.length / 2,
       z: SPAWN_Z,
+      safeFollowSeconds: this.map.traffic.safeFollowSeconds,
+      laneChangeChanceMin: this.map.traffic.laneChangeChance.min,
+      laneChangeChanceMax: this.map.traffic.laneChangeChance.max,
     });
 
     const group = new THREE.Group();
+    // Oncoming traffic drives toward the player, so it faces the opposite
+    // way — the correct foundation for when real (asymmetric) models
+    // replace this placeholder box.
+    group.rotation.y = isOncoming ? Math.PI : 0;
     group.add(mesh);
     group.position.set(driver.x, 0, driver.z);
     this.root.add(group);
