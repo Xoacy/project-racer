@@ -13,13 +13,13 @@ const COLLISION_FORGIVENESS = 0.82;
  */
 export class CollisionSystem {
   check(player: PlayerState, playerHalfWidth: number, playerHalfLength: number, traffic: TrafficInstance[]): boolean {
-    for (const instance of traffic) {
-      const distanceZ = Math.abs(instance.group.position.z - WORLD.playerZ);
-      const combinedHalfLength = (playerHalfLength + instance.halfLength) * COLLISION_FORGIVENESS;
+    for (const { driver } of traffic) {
+      const distanceZ = Math.abs(driver.z - WORLD.playerZ);
+      const combinedHalfLength = (playerHalfLength + driver.halfLength) * COLLISION_FORGIVENESS;
       if (distanceZ >= combinedHalfLength) continue;
 
-      const distanceX = Math.abs(instance.group.position.x - player.currentX);
-      const combinedHalfWidth = (playerHalfWidth + instance.halfWidth) * COLLISION_FORGIVENESS;
+      const distanceX = Math.abs(driver.x - player.currentX);
+      const combinedHalfWidth = (playerHalfWidth + driver.halfWidth) * COLLISION_FORGIVENESS;
       if (distanceX >= combinedHalfWidth) continue;
 
       return true;

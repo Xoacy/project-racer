@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import type { NpcDriver } from './NpcDriver';
 
 export interface PlayerState {
   currentX: number; // meters, free lateral position (0 = road center)
@@ -11,13 +12,9 @@ export interface PlayerState {
 
 export interface TrafficInstance {
   group: THREE.Group;
-  /** Which lane slot this instance spawned in — only used internally by
-   *  TrafficSpawner to avoid repeating the same lane; collision uses the
-   *  instance's actual world X position (group.position.x), not this. */
-  laneIndex: number;
-  speed: number;
-  halfLength: number;
-  halfWidth: number;
+  /** The AI/logic side — x/z/speed here are authoritative; `group`'s
+   *  transform is just a visual mirror of it, synced each frame. */
+  driver: NpcDriver;
 }
 
 export interface SceneryInstance {

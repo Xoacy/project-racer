@@ -60,6 +60,56 @@ export const SCORE_TUNING = {
   pointsPerMeter: 1,
 };
 
+/** AI traffic (NPC) tuning — car-following and occasional lane changes.
+ *  See gameplay/NpcDriver.ts for how these are used. */
+export const NPC_TUNING = {
+  /** Intelligent Driver Model params (Treiber et al., 2000) — a compact
+   *  car-following formula: an NPC accelerates toward its own cruise
+   *  speed on an open road, and smoothly brakes to keep a safe,
+   *  speed-dependent gap behind whichever vehicle is directly ahead of it
+   *  in its lateral path. Composes correctly across a chain of several
+   *  vehicles with no special-casing. */
+  idm: {
+    maxAcceleration: 2.2, // m/s^2
+    comfortableDeceleration: 3.5, // m/s^2 (positive value)
+    minGap: 3.5, // meters, desired bumper-to-bumper gap at a dead stop
+    timeHeadway: 1, // seconds of following distance to keep at current speed
+    accelerationExponent: 4,
+  },
+  /** Beyond this lateral distance (plus both half-widths), two vehicles
+   *  are considered to be in different paths entirely — not relevant to
+   *  each other for following or lane-change safety checks. */
+  lateralFollowMargin: 0.5,
+  /** Lateral movement while executing a lane change. */
+  lateral: {
+    maxSpeed: 3.2, // m/s
+    acceleration: 6, // m/s^2
+    deceleration: 8, // m/s^2
+    /** How much of the remaining distance to the target lane the NPC
+     *  tries to close per second — shapes an "ease into it" lane change
+     *  that settles cleanly instead of overshooting and correcting. */
+    approachGain: 2.5,
+    /** Within this distance of the target lane, the NPC is considered
+     *  settled and may consider a new lane-change decision. */
+    settledThreshold: 0.05,
+  },
+  laneChange: {
+    /** Random interval (s) between lane-change decision checks. */
+    checkIntervalMin: 4,
+    checkIntervalMax: 11,
+    /** Chance [0,1] that a decision check results in an actual attempt —
+     *  randomized per-NPC between these bounds (a "personality") so a
+     *  batch of traffic doesn't all decide to change lanes in lockstep. */
+    chanceMin: 0.15,
+    chanceMax: 0.5,
+    /** Minimum bumper-to-bumper gap required in the target lane, ahead
+     *  and behind, to commit to a lane change — behind gets a bit more
+     *  room so an NPC never cuts someone off closely from the side. */
+    minGapAhead: 6,
+    minGapBehind: 8,
+  },
+};
+
 /** World layout constants that are not per-map (per-map values live in
  *  MapConfig). */
 export const WORLD = {

@@ -64,8 +64,9 @@ src/
   gameplay/            # LÓGICA PURA — sem THREE.Object3D, só números e regras
     PlayerVehicle.ts     # estado do jogador: posição lateral livre, velocidade
     Track.ts              # geração/scroll procedural dos segmentos de pista
-    TrafficSpawner.ts      # spawn e movimento do trânsito (velocidade relativa)
-    ScenerySpawner.ts       # spawn de props decorativos nas bordas da pista
+    NpcDriver.ts            # IA de um veículo de trânsito: car-following (IDM) + troca de faixa
+    TrafficSpawner.ts        # spawn de trânsito, orquestra os NpcDriver com vizinhança compartilhada
+    ScenerySpawner.ts         # spawn de props decorativos nas bordas da pista
     CollisionSystem.ts       # colisão por sobreposição real de X e Z (AABB)
     ScoreSystem.ts            # pontuação e recorde (localStorage)
     DifficultyManager.ts       # curva de dificuldade (velocidade-alvo, spawn de trânsito)

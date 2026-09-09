@@ -3,6 +3,7 @@ import type { MapConfig } from '@/config/maps';
 import { createPlaceholderBox } from '@/render/PlaceholderFactory';
 import { WORLD } from '@/config/constants';
 import { randInt, randRange } from '@/utils/MathUtils';
+import { NpcDriver, type NpcNeighbor } from './NpcDriver';
 import type { TrafficInstance } from './types';
 
 const SPAWN_Z = -140;
@@ -11,10 +12,11 @@ const TRAFFIC_COLORS = [0xf1faee, 0xe9c46a, 0x8d99ae, 0x6b705c, 0xadb5bd];
 const LANE_REPEAT_AVOID = 2; // don't spawn in the same lane more than this many times in a row
 
 /**
- * Spawns oncoming/slower traffic ahead of the player and scrolls it toward
- * the camera at the *relative* speed between the player and that vehicle —
- * this is what makes overtaking read correctly instead of traffic just
- * sliding at world speed like scenery does.
+ * Spawns traffic and drives it with NpcDriver (car-following + occasional
+ * lane changes — see NpcDriver.ts). Each instance scrolls at the
+ * *relative* speed between the player and its own current speed, same
+ * scroll-space frame as everything else, so gaps between traffic
+ * instances stay physically meaningful for the AI's own following logic.
  */
 export class TrafficSpawner {
   readonly root = new THREE.Group();
@@ -32,11 +34,24 @@ export class TrafficSpawner {
       this.spawnOne();
     }
 
+    // One shared snapshot per frame: each NPC's decisions this frame are
+    // based on where everyone else was at the start of the frame, not a
+    // partially-updated mix — avoids order-dependent behavior.
+    const snapshot: NpcNeighbor[] = this.active.map(({ driver }) => ({
+      x: driver.x,
+      z: driver.z,
+      halfWidth: driver.halfWidth,
+      halfLength: driver.halfLength,
+      speed: driver.speed,
+    }));
+
     for (let i = this.active.length - 1; i >= 0; i--) {
       const instance = this.active[i];
-      const relativeSpeed = playerSpeed - instance.speed;
-      instance.group.position.z += relativeSpeed * dt;
-      if (instance.group.position.z > WORLD.cullDistanceBehind) {
+      const neighbors = snapshot.length > 1 ? snapshot.filter((_, idx) => idx !== i) : [];
+      instance.driver.update(dt, neighbors, playerSpeed);
+      instance.group.position.set(instance.driver.x, 0, instance.driver.z);
+
+      if (instance.driver.z > WORLD.cullDistanceBehind) {
         this.root.remove(instance.group);
         this.disposeInstance(instance);
         this.active.splice(i, 1);
@@ -52,22 +67,25 @@ export class TrafficSpawner {
     this.recentLanes.push(lane);
     if (this.recentLanes.length > LANE_REPEAT_AVOID) this.recentLanes.shift();
 
-    const x = (lane - (this.map.lanes.count - 1) / 2) * this.map.lanes.width;
     const color = TRAFFIC_COLORS[randInt(0, TRAFFIC_COLORS.length - 1)];
     const mesh = createPlaceholderBox({ ...TRAFFIC_DIMENSIONS, color });
 
+    const driver = new NpcDriver({
+      laneCount: this.map.lanes.count,
+      laneWidth: this.map.lanes.width,
+      startLaneIndex: lane,
+      cruiseSpeed: randRange(this.map.traffic.minSpeed, this.map.traffic.maxSpeed),
+      halfWidth: TRAFFIC_DIMENSIONS.width / 2,
+      halfLength: TRAFFIC_DIMENSIONS.length / 2,
+      z: SPAWN_Z,
+    });
+
     const group = new THREE.Group();
     group.add(mesh);
-    group.position.set(x, 0, SPAWN_Z);
+    group.position.set(driver.x, 0, driver.z);
     this.root.add(group);
 
-    this.active.push({
-      group,
-      laneIndex: lane,
-      speed: randRange(this.map.traffic.minSpeed, this.map.traffic.maxSpeed),
-      halfLength: TRAFFIC_DIMENSIONS.length / 2,
-      halfWidth: TRAFFIC_DIMENSIONS.width / 2,
-    });
+    this.active.push({ group, driver });
   }
 
   getActive(): TrafficInstance[] {
