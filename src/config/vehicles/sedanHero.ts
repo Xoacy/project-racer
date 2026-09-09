@@ -13,6 +13,8 @@ export const sedanHero: VehicleConfig = {
     maxSpeed: 46, // ~165 km/h
     acceleration: 14,
     deceleration: 22,
-    handling: 9,
+    lateralMaxSpeed: 9,
+    lateralAcceleration: 32,
+    lateralDeceleration: 38,
   },
 };

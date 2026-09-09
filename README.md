@@ -9,7 +9,7 @@ Corrida infinita estilo *Traffic Racer* — troca de faixas, trânsito para desv
 - **[Three.js](https://threejs.org/)** — motor de renderização (WebGL).
 - **[Vite](https://vitejs.dev/)** — bundler/dev server.
 - **TypeScript** — usado desde o início porque a arquitetura é orientada a dados (configs de veículo/mapa tipados pegam erro de config antes de rodar).
-- **Física arcade "feita à mão"** — sem Rapier/Cannon. Troca de faixa é interpolação suave (exponential smoothing) entre posições de faixa; aceleração/frenagem são curvas simples, não simulação de suspensão/torque.
+- **Física arcade "feita à mão"** — sem Rapier/Cannon. Movimentação lateral é livre e contínua (aceleração/desaceleração até uma velocidade lateral máxima, sem snap para faixa nenhuma); aceleração/frenagem longitudinal são curvas simples, não simulação de suspensão/torque.
 - **[Capacitor](https://capacitorjs.com/)** — empacotamento do build web como app Android. *Ainda não configurado* — entra na reta final, depois que o gameplay e a arte estiverem validados.
 - **Modelos 3D**: feitos em Blender, exportados em glTF/glb, carregados via `GLTFLoader`.
 
@@ -35,8 +35,10 @@ npm run preview   # serve o build de produção localmente, pra testar antes de 
 
 | Ação | Teclado | Touch (mobile) |
 |---|---|---|
-| Trocar de faixa | `←`/`→` ou `A`/`D` | swipe esquerda/direita, ou botões na HUD |
+| Virar (livre, sem faixa) | segurar `←`/`→` ou `A`/`D` | arrastar o dedo pela tela, ou botões na HUD |
 | Frear | `↓`/`S`/espaço | botão "FREIO" na HUD |
+
+A posição lateral é livre e contínua — o carro pode ficar em qualquer ponto da largura da pista, inclusive entre faixas ou encostado numa borda. As faixas são só referência visual (`MapConfig.lanes`), não posições obrigatórias: o carro acelera/desacelera lateralmente conforme o comando, sem "encaixar" em faixa nenhuma.
 
 O carro acelera sozinho até um teto de velocidade que sobe com o tempo (curva de dificuldade) — frear é o que você usa pra desviar do trânsito. Tilt (inclinar o celular) já está implementado em `core/input/TiltSource.ts` mas desligado por padrão; é só chamar `requestPermissionAndEnable()` de uma tela de configurações futura.
 
@@ -57,14 +59,14 @@ src/
     SceneManager.ts     # renderer/scene/câmera/luzes do Three.js
     AssetLoader.ts       # carrega .glb via GLTFLoader, com cache
     EventBus.ts          # pub/sub — ÚNICO canal entre UI e gameplay
-    input/                # teclado, touch (swipe) e tilt, unificados num InputManager
+    input/                # teclado, touch (arrastar) e tilt, unificados num InputManager
 
   gameplay/            # LÓGICA PURA — sem THREE.Object3D, só números e regras
-    PlayerVehicle.ts     # estado do jogador: faixa, posição, velocidade
+    PlayerVehicle.ts     # estado do jogador: posição lateral livre, velocidade
     Track.ts              # geração/scroll procedural dos segmentos de pista
     TrafficSpawner.ts      # spawn e movimento do trânsito (velocidade relativa)
     ScenerySpawner.ts       # spawn de props decorativos nas bordas da pista
-    CollisionSystem.ts       # colisão por faixa + faixa de z
+    CollisionSystem.ts       # colisão por sobreposição real de X e Z (AABB)
     ScoreSystem.ts            # pontuação e recorde (localStorage)
     DifficultyManager.ts       # curva de dificuldade (velocidade-alvo, spawn de trânsito)
     RunSession.ts               # amarra tudo isso pra uma partida
@@ -106,10 +108,12 @@ export const meuCarro: VehicleConfig = {
   dimensions: { width: 1.9, height: 1.3, length: 4.3 },
   placeholderColor: 0x2a9d8f,
   physics: {
-    maxSpeed: 48,       // m/s
-    acceleration: 13,   // m/s^2
-    deceleration: 20,   // m/s^2
-    handling: 8,        // responsividade da troca de faixa
+    maxSpeed: 48,             // m/s
+    acceleration: 13,         // m/s^2
+    deceleration: 20,         // m/s^2
+    lateralMaxSpeed: 8,       // m/s, velocidade lateral máxima
+    lateralAcceleration: 28,  // m/s^2
+    lateralDeceleration: 32,  // m/s^2
   },
 };
 ```

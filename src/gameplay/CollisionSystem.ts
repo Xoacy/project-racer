@@ -6,17 +6,23 @@ import type { PlayerState, TrafficInstance } from './types';
 const COLLISION_FORGIVENESS = 0.82;
 
 /**
- * Lane-based collision: same lane + overlapping z-range near the player.
- * Deliberately simple (no full 3D physics) since vehicles are always
- * lane-aligned by construction — this is enough to be fair and readable.
+ * True AABB overlap in both X and Z — the player's lateral position is now
+ * free/continuous (see PlayerVehicle), so "same lane" no longer means
+ * anything for collision purposes. A traffic instance's actual world X
+ * position is what's checked, regardless of which lane slot it spawned in.
  */
 export class CollisionSystem {
-  check(player: PlayerState, playerHalfLength: number, traffic: TrafficInstance[]): boolean {
+  check(player: PlayerState, playerHalfWidth: number, playerHalfLength: number, traffic: TrafficInstance[]): boolean {
     for (const instance of traffic) {
-      if (instance.laneIndex !== player.laneIndex) continue;
       const distanceZ = Math.abs(instance.group.position.z - WORLD.playerZ);
       const combinedHalfLength = (playerHalfLength + instance.halfLength) * COLLISION_FORGIVENESS;
-      if (distanceZ < combinedHalfLength) return true;
+      if (distanceZ >= combinedHalfLength) continue;
+
+      const distanceX = Math.abs(instance.group.position.x - player.currentX);
+      const combinedHalfWidth = (playerHalfWidth + instance.halfWidth) * COLLISION_FORGIVENESS;
+      if (distanceX >= combinedHalfWidth) continue;
+
+      return true;
     }
     return false;
   }

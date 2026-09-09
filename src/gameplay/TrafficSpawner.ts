@@ -66,6 +66,7 @@ export class TrafficSpawner {
       laneIndex: lane,
       speed: randRange(this.map.traffic.minSpeed, this.map.traffic.maxSpeed),
       halfLength: TRAFFIC_DIMENSIONS.length / 2,
+      halfWidth: TRAFFIC_DIMENSIONS.width / 2,
     });
   }
 

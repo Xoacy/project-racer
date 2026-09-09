@@ -1,19 +1,18 @@
 import type { InputManager } from './InputManager';
 import type { InputSource } from './InputTypes';
 
-const TRIGGER_ANGLE_DEG = 14;
-const NEUTRAL_ANGLE_DEG = 6; // hysteresis: must return inside this band to re-arm
+/** Tilt angle (degrees) that maps to full lateral deflection. */
+const MAX_TILT_DEG = 22;
 
 /**
- * Device-tilt steering (Android/mobile browsers), off by default — swipe is
- * the default mobile scheme (see TouchSource). A future settings screen can
- * call `requestPermissionAndEnable()` to opt in; this is intentionally
+ * Device-tilt steering (Android/mobile browsers), off by default — touch
+ * drag is the default mobile scheme (see TouchSource). A future settings
+ * screen can call `requestPermissionAndEnable()` to opt in; this is kept
  * separate from `attach()` because iOS/some Android browsers require a
  * user-gesture-triggered permission prompt for orientation events.
  */
 export class TiltSource implements InputSource {
   private enabled = false;
-  private armed = true; // must recenter before triggering again
 
   constructor(private manager: InputManager) {}
 
@@ -48,17 +47,12 @@ export class TiltSource implements InputSource {
 
   disable(): void {
     this.enabled = false;
+    this.manager.setLateralInput(0);
   }
 
   private handleOrientation = (e: DeviceOrientationEvent): void => {
     if (!this.enabled || e.gamma === null) return;
-    const gamma = e.gamma; // left/right tilt in degrees
-
-    if (this.armed && Math.abs(gamma) >= TRIGGER_ANGLE_DEG) {
-      this.manager.requestLaneChange(gamma > 0 ? 1 : -1);
-      this.armed = false;
-    } else if (!this.armed && Math.abs(gamma) <= NEUTRAL_ANGLE_DEG) {
-      this.armed = true;
-    }
+    const value = Math.max(-1, Math.min(1, e.gamma / MAX_TILT_DEG));
+    this.manager.setLateralInput(value);
   };
 }

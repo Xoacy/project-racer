@@ -11,6 +11,8 @@ export const muscleBrute: VehicleConfig = {
     maxSpeed: 52,
     acceleration: 11,
     deceleration: 18,
-    handling: 6.5,
+    lateralMaxSpeed: 6.5,
+    lateralAcceleration: 22,
+    lateralDeceleration: 26,
   },
 };

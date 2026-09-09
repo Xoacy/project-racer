@@ -25,7 +25,7 @@ export class VehicleSelectScreen implements Screen {
         <div class="card__name">${vehicle.name}</div>
         <div class="stat-row"><span>Velocidade</span>${barHtml(vehicle.physics.maxSpeed, 60)}</div>
         <div class="stat-row"><span>Aceleração</span>${barHtml(vehicle.physics.acceleration, 20)}</div>
-        <div class="stat-row"><span>Manejo</span>${barHtml(vehicle.physics.handling, 12)}</div>
+        <div class="stat-row"><span>Manejo</span>${barHtml(vehicle.physics.lateralMaxSpeed, 12)}</div>
       `;
       card.addEventListener('click', () => {
         eventBus.emit('ui:vehicle-selected', { vehicleId: vehicle.id });

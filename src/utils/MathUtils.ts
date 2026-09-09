@@ -15,6 +15,16 @@ export function expSmooth(current: number, target: number, rate: number, dt: num
   return lerp(current, target, t);
 }
 
+/** Moves `current` toward `target` by at most `maxDelta` — a linear ramp
+ *  (constant acceleration when maxDelta = rate * dt), unlike expSmooth's
+ *  exponential ease. Used for the player's lateral speed so steering has a
+ *  genuine acceleration/deceleration curve instead of an ease-out feel. */
+export function moveTowards(current: number, target: number, maxDelta: number): number {
+  const delta = target - current;
+  if (Math.abs(delta) <= maxDelta) return target;
+  return current + Math.sign(delta) * maxDelta;
+}
+
 export function randRange(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }

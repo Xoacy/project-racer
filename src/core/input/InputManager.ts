@@ -1,26 +1,23 @@
-import type { LaneDirection, InputSource } from './InputTypes';
+import type { InputSource } from './InputTypes';
 import { KeyboardSource } from './KeyboardSource';
 import { TouchSource } from './TouchSource';
 import { TiltSource } from './TiltSource';
-import { PLAYER_TUNING } from '@/config/constants';
 
 /**
- * Unified input aggregator. Every control scheme (keyboard, swipe, tilt)
- * ultimately just calls `requestLaneChange` / `setBraking` on this — the
- * gameplay layer only ever talks to InputManager, never to a specific
+ * Unified input aggregator. Every control scheme (keyboard, touch drag,
+ * tilt) ultimately just calls `setLateralInput` / `setBraking` on this —
+ * the gameplay layer only ever talks to InputManager, never to a specific
  * scheme, so adding e.g. a gamepad source later touches only this file.
  */
 export class InputManager {
-  private pendingLaneRequests: LaneDirection[] = [];
+  /** Analog steering value in [-1, 1]: full left, full right, or anywhere
+   *  between for sources that support variable intensity (touch drag,
+   *  tilt angle). PlayerVehicle turns this into an actual lateral position
+   *  via its own acceleration/deceleration curve — this class just carries
+   *  the raw "how hard is the player steering right now" signal. */
+  private lateralInput = 0;
   private braking = false;
   private accelerating = false;
-
-  // Auto-repeat while a direction is held (keyboard held down, HUD button
-  // held) — see PLAYER_TUNING.laneChangeInputCooldown. The initial press
-  // always fires immediately via requestLaneChange(); this only governs
-  // repeats for as long as the source keeps the hold active.
-  private heldDirection: LaneDirection | null = null;
-  private heldTimer = 0;
 
   private keyboard: KeyboardSource;
   private touch: TouchSource;
@@ -42,29 +39,14 @@ export class InputManager {
     this.sources.forEach((s) => s.detach());
   }
 
-  /** Called by input sources. */
-  requestLaneChange(direction: LaneDirection): void {
-    this.pendingLaneRequests.push(direction);
+  /** Called by input sources whenever their steering value changes. */
+  setLateralInput(value: number): void {
+    this.lateralInput = value;
   }
 
-  /** Called by "hold-capable" sources (keyboard, HUD lane buttons) on
-   *  press/release so a sustained hold can keep stepping across lanes.
-   *  Pass null when nothing is held (e.g. key released, or two opposing
-   *  directions held at once — ambiguous, so no auto-repeat). */
-  setLaneHeld(direction: LaneDirection | null): void {
-    this.heldDirection = direction;
-    this.heldTimer = 0;
-  }
-
-  /** Must be called once per gameplay frame (before consumeLaneRequests)
-   *  to drive the hold-to-repeat timer. */
-  update(dt: number): void {
-    if (this.heldDirection === null) return;
-    this.heldTimer += dt;
-    if (this.heldTimer >= PLAYER_TUNING.laneChangeInputCooldown) {
-      this.heldTimer -= PLAYER_TUNING.laneChangeInputCooldown;
-      this.requestLaneChange(this.heldDirection);
-    }
+  /** Called once per gameplay frame to read the current analog steering value. */
+  getLateralInput(): number {
+    return this.lateralInput;
   }
 
   setBraking(value: boolean): void {
@@ -73,14 +55,6 @@ export class InputManager {
 
   setAccelerating(value: boolean): void {
     this.accelerating = value;
-  }
-
-  /** Called once per gameplay frame. Drains queued lane-change requests so
-   *  each physical input maps to exactly one lane shift. */
-  consumeLaneRequests(): LaneDirection[] {
-    const requests = this.pendingLaneRequests;
-    this.pendingLaneRequests = [];
-    return requests;
   }
 
   isBraking(): boolean {

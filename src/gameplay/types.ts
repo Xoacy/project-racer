@@ -1,8 +1,7 @@
 import type * as THREE from 'three';
 
 export interface PlayerState {
-  laneIndex: number; // rounded, nearest lane
-  currentX: number;
+  currentX: number; // meters, free lateral position (0 = road center)
   speed: number; // m/s
   distanceTraveled: number; // meters
   lateralVelocity: number; // m/s, for roll juice
@@ -12,9 +11,13 @@ export interface PlayerState {
 
 export interface TrafficInstance {
   group: THREE.Group;
+  /** Which lane slot this instance spawned in — only used internally by
+   *  TrafficSpawner to avoid repeating the same lane; collision uses the
+   *  instance's actual world X position (group.position.x), not this. */
   laneIndex: number;
   speed: number;
   halfLength: number;
+  halfWidth: number;
 }
 
 export interface SceneryInstance {

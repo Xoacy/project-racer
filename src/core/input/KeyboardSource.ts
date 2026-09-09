@@ -6,6 +6,13 @@ const RIGHT_KEYS = new Set(['ArrowRight', 'KeyD']);
 const BRAKE_KEYS = new Set(['ArrowDown', 'KeyS', 'Space']);
 const ACCEL_KEYS = new Set(['ArrowUp', 'KeyW']);
 
+/**
+ * Keyboard steering is inherently digital — a key is either down or up —
+ * so it always requests full deflection (-1 or 1). The analog "feel" the
+ * player experiences comes entirely from PlayerVehicle's own lateral
+ * acceleration/deceleration curve reacting to that input, not from the
+ * input value itself.
+ */
 export class KeyboardSource implements InputSource {
   private leftHeld = false;
   private rightHeld = false;
@@ -23,18 +30,13 @@ export class KeyboardSource implements InputSource {
   }
 
   private handleKeyDown = (e: KeyboardEvent): void => {
-    // Browser auto-repeat timing is inconsistent across OS/browser
-    // settings, so it's ignored here — InputManager.update() drives our
-    // own repeat cadence off PLAYER_TUNING.laneChangeInputCooldown instead.
     if (e.repeat) return;
     if (LEFT_KEYS.has(e.code)) {
       this.leftHeld = true;
-      this.manager.requestLaneChange(-1);
-      this.syncHeldDirection();
+      this.syncLateralInput();
     } else if (RIGHT_KEYS.has(e.code)) {
       this.rightHeld = true;
-      this.manager.requestLaneChange(1);
-      this.syncHeldDirection();
+      this.syncLateralInput();
     } else if (BRAKE_KEYS.has(e.code)) {
       this.manager.setBraking(true);
     } else if (ACCEL_KEYS.has(e.code)) {
@@ -45,10 +47,10 @@ export class KeyboardSource implements InputSource {
   private handleKeyUp = (e: KeyboardEvent): void => {
     if (LEFT_KEYS.has(e.code)) {
       this.leftHeld = false;
-      this.syncHeldDirection();
+      this.syncLateralInput();
     } else if (RIGHT_KEYS.has(e.code)) {
       this.rightHeld = false;
-      this.syncHeldDirection();
+      this.syncLateralInput();
     } else if (BRAKE_KEYS.has(e.code)) {
       this.manager.setBraking(false);
     } else if (ACCEL_KEYS.has(e.code)) {
@@ -56,11 +58,12 @@ export class KeyboardSource implements InputSource {
     }
   };
 
-  /** Both keys held at once is ambiguous — treat it as "hold nothing"
-   *  rather than guessing a priority. */
-  private syncHeldDirection(): void {
-    if (this.leftHeld && !this.rightHeld) this.manager.setLaneHeld(-1);
-    else if (this.rightHeld && !this.leftHeld) this.manager.setLaneHeld(1);
-    else this.manager.setLaneHeld(null);
+  /** Both keys held at once cancels out, like fighting a wheel in both
+   *  directions — no arbitrary priority between them. */
+  private syncLateralInput(): void {
+    let value = 0;
+    if (this.leftHeld) value -= 1;
+    if (this.rightHeld) value += 1;
+    this.manager.setLateralInput(value);
   }
 }

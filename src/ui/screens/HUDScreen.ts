@@ -4,8 +4,9 @@ import type { Screen } from './Screen';
 
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-/** In-run overlay: score/speed readout plus on-screen lane/brake buttons
- *  for touch devices. Talks to gameplay only via EventBus (readout) and
+/** In-run overlay: score/speed readout plus on-screen steer/brake buttons
+ *  for touch devices (an alternative to dragging directly on the canvas —
+ *  see TouchSource). Talks to gameplay only via EventBus (readout) and
  *  InputManager (the shared input abstraction every control scheme feeds
  *  into — see core/input/InputManager.ts). */
 export class HUDScreen implements Screen {
@@ -23,9 +24,9 @@ export class HUDScreen implements Screen {
       ${
         isTouchDevice
           ? `<div class="hud-controls">
-              <button class="hud-btn hud-btn--lane" data-lane-left aria-label="Mudar para faixa esquerda">◀</button>
+              <button class="hud-btn hud-btn--lane" data-lane-left aria-label="Virar para a esquerda">◀</button>
               <button class="hud-btn hud-btn--brake" data-brake aria-label="Frear">FREIO</button>
-              <button class="hud-btn hud-btn--lane" data-lane-right aria-label="Mudar para faixa direita">▶</button>
+              <button class="hud-btn hud-btn--lane" data-lane-right aria-label="Virar para a direita">▶</button>
             </div>`
           : ''
       }
@@ -50,21 +51,19 @@ export class HUDScreen implements Screen {
 
     leftBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      this.inputManager.requestLaneChange(-1);
-      this.inputManager.setLaneHeld(-1);
+      this.inputManager.setLateralInput(-1);
     });
     leftBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      this.inputManager.setLaneHeld(null);
+      this.inputManager.setLateralInput(0);
     });
     rightBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      this.inputManager.requestLaneChange(1);
-      this.inputManager.setLaneHeld(1);
+      this.inputManager.setLateralInput(1);
     });
     rightBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      this.inputManager.setLaneHeld(null);
+      this.inputManager.setLateralInput(0);
     });
     brakeBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();

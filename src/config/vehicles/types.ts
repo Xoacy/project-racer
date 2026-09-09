@@ -27,8 +27,14 @@ export interface VehicleConfig {
     acceleration: number;
     /** How fast (m/s^2) the vehicle slows down while braking. */
     deceleration: number;
-    /** Lane-change responsiveness — higher = snappier lane changes. Used as an
-     *  exponential-smoothing rate (1/seconds), not a real steering force. */
-    handling: number;
+    /** Max sideways speed (m/s) at full lateral steering input. */
+    lateralMaxSpeed: number;
+    /** How fast (m/s^2) lateral speed ramps up toward the input-driven
+     *  target — higher = snappier steering response. */
+    lateralAcceleration: number;
+    /** How fast (m/s^2) lateral speed decays back toward 0 as steering
+     *  input eases off or reverses — how quickly the car "settles" instead
+     *  of continuing to drift sideways once you let go. */
+    lateralDeceleration: number;
   };
 }

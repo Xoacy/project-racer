@@ -7,11 +7,14 @@
 /** Purely cosmetic vehicle-view animation — NOT physics. Drives the
  *  roll/pitch/bob procedural juice described in the design brief. */
 export const JUICE_TUNING = {
-  /** Roll (bank) applied while changing lanes. */
+  /** Roll (bank) applied while steering laterally. */
   roll: {
     maxAngleRad: 0.16,
-    /** Radians of roll per (m/s) of lateral velocity, before clamping to maxAngleRad. */
-    radiansPerLateralSpeed: 0.045,
+    /** Radians of roll per (m/s) of lateral velocity, before clamping to
+     *  maxAngleRad — tuned so max roll lands near a typical vehicle's
+     *  lateralMaxSpeed (see VehicleConfig.physics), not far below it, so
+     *  gentle nudges and full-deflection steering visibly feel different. */
+    radiansPerLateralSpeed: 0.02,
     /** Exponential-smoothing rate (1/seconds) for how fast roll eases in/out. */
     lerpRate: 7,
   },
@@ -39,16 +42,6 @@ export const JUICE_TUNING = {
   },
 };
 
-/** Lane-change and player-controller tuning not specific to one vehicle. */
-export const PLAYER_TUNING = {
-  /** While a direction is held (keyboard held down, HUD button held), this
-   *  is the interval (s) between auto-repeated lane-change steps — lets
-   *  the player cross several lanes in one continuous hold instead of one
-   *  discrete press per lane. The first step on press-down always fires
-   *  immediately regardless of this cooldown. */
-  laneChangeInputCooldown: 0.12,
-};
-
 /** Global difficulty ramp — how fast the "target speed" a run pushes the
  *  player towards climbs over time, and how traffic density scales with it.
  *  A map's `difficultyMultiplier` scales the time axis of this curve. */
@@ -74,4 +67,9 @@ export const WORLD = {
   cullDistanceBehind: 12,
   /** Player car's fixed z position (world scrolls under/around it). */
   playerZ: 0,
+  /** When lateral movement is clamped at the road's edge, the car's
+   *  incoming lateral speed is inverted and scaled by this factor instead
+   *  of just being zeroed — a small "thud and settle back" rebound so
+   *  hitting the edge reads as a physical stop, not a hard wall snap. */
+  edgeBounceFactor: 0.2,
 };

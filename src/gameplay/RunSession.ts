@@ -65,13 +65,12 @@ export class RunSession {
     if (this.ended) return false;
 
     this.difficulty.update(dt);
-    this.inputManager.update(dt);
 
-    const laneRequests = this.inputManager.consumeLaneRequests();
+    const lateralInput = this.inputManager.getLateralInput();
     const braking = this.inputManager.isBraking();
     const targetSpeed = this.difficulty.getTargetSpeed(this.vehicleMaxSpeed);
 
-    this.player.update(dt, laneRequests, braking, targetSpeed);
+    this.player.update(dt, lateralInput, braking, targetSpeed);
     const state = this.player.getState();
 
     this.track.update(dt, state.speed);
@@ -88,8 +87,9 @@ export class RunSession {
       speedRatio: state.speed / state.maxSpeed,
     });
 
+    const playerHalfWidth = this.player.dimensions.width / 2;
     const playerHalfLength = this.player.dimensions.length / 2;
-    if (this.collision.check(state, playerHalfLength, this.traffic.getActive())) {
+    if (this.collision.check(state, playerHalfWidth, playerHalfLength, this.traffic.getActive())) {
       this.ended = true;
       eventBus.emit('game:collision', { atDistanceMeters: state.distanceTraveled });
       const isNewHighScore = ScoreSystem.commitIfHighScore(this.score.getScore());

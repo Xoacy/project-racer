@@ -1,33 +1,36 @@
 import type { InputManager } from './InputManager';
 import type { InputSource } from './InputTypes';
 
-const SWIPE_THRESHOLD_PX = 40;
-/** Extra pixels of swipe distance, beyond the initial threshold, that add
- *  one more lane to the jump — lets a long swipe cross several lanes in a
- *  single continuous gesture instead of one swipe per lane. */
-const PX_PER_EXTRA_LANE = 70;
-const MAX_LANES_PER_SWIPE = 3;
+/** Horizontal drag distance (px) from the touch's start point that maps to
+ *  full lateral deflection. */
+const MAX_DRAG_PX = 90;
 
 /**
- * Swipe-left/right on the game surface to change lanes. The brake button
- * itself lives in the DOM (HUDScreen) and calls `setBrakeButtonHeld`
- * directly on pointer down/up rather than going through swipe detection.
+ * Press-and-drag steering: horizontal distance from where the touch
+ * started maps continuously to lateral input, like a virtual joystick
+ * anchored at the touch point — the further from the anchor, the stronger
+ * the deflection, up to MAX_DRAG_PX. Lifting the finger returns to
+ * neutral. The brake button lives in the DOM (HUDScreen) and calls
+ * `setBrakeButtonHeld` directly rather than going through this gesture.
  */
 export class TouchSource implements InputSource {
-  private startX = 0;
-  private startY = 0;
+  private anchorX = 0;
   private tracking = false;
 
   constructor(private manager: InputManager, private surface: HTMLElement) {}
 
   attach(): void {
     this.surface.addEventListener('touchstart', this.handleStart, { passive: true });
+    this.surface.addEventListener('touchmove', this.handleMove, { passive: true });
     this.surface.addEventListener('touchend', this.handleEnd, { passive: true });
+    this.surface.addEventListener('touchcancel', this.handleEnd, { passive: true });
   }
 
   detach(): void {
     this.surface.removeEventListener('touchstart', this.handleStart);
+    this.surface.removeEventListener('touchmove', this.handleMove);
     this.surface.removeEventListener('touchend', this.handleEnd);
+    this.surface.removeEventListener('touchcancel', this.handleEnd);
   }
 
   setBrakeButtonHeld(held: boolean): void {
@@ -35,23 +38,19 @@ export class TouchSource implements InputSource {
   }
 
   private handleStart = (e: TouchEvent): void => {
-    const touch = e.changedTouches[0];
-    this.startX = touch.clientX;
-    this.startY = touch.clientY;
+    this.anchorX = e.changedTouches[0].clientX;
     this.tracking = true;
   };
 
-  private handleEnd = (e: TouchEvent): void => {
+  private handleMove = (e: TouchEvent): void => {
     if (!this.tracking) return;
-    this.tracking = false;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - this.startX;
-    const dy = touch.clientY - this.startY;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy)) return;
+    const dx = e.changedTouches[0].clientX - this.anchorX;
+    const value = Math.max(-1, Math.min(1, dx / MAX_DRAG_PX));
+    this.manager.setLateralInput(value);
+  };
 
-    const direction = dx > 0 ? 1 : -1;
-    const extraDistance = Math.abs(dx) - SWIPE_THRESHOLD_PX;
-    const lanes = Math.min(MAX_LANES_PER_SWIPE, 1 + Math.floor(extraDistance / PX_PER_EXTRA_LANE));
-    for (let i = 0; i < lanes; i++) this.manager.requestLaneChange(direction);
+  private handleEnd = (): void => {
+    this.tracking = false;
+    this.manager.setLateralInput(0);
   };
 }
