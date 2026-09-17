@@ -10,10 +10,10 @@ import { clamp, expSmooth } from '@/utils/MathUtils';
  * Presentation-only wrapper around the player's 3D model. `root` is driven
  * directly by game state each frame (position = where the car logically
  * is); `tiltGroup` is a nested child that ONLY procedural juice code
- * touches (roll/pitch/bob). Gameplay code never reads or writes tiltGroup,
- * and this class never touches gameplay state — it only reads a PlayerState
+ * touches (roll/pitch). Gameplay code never reads or writes tiltGroup, and
+ * this class never touches gameplay state — it only reads a PlayerState
  * snapshot. That separation is what keeps collision/scoring numerically
- * exact regardless of how bouncy the visuals get.
+ * exact regardless of how the visuals are tuned.
  */
 export class VehicleView {
   readonly root = new THREE.Group();
@@ -22,7 +22,6 @@ export class VehicleView {
 
   private roll = 0;
   private pitch = 0;
-  private bobPhase = 0;
 
   constructor(private assetLoader: AssetLoader, vehicle: VehicleConfig) {
     this.root.add(this.tiltGroup);
@@ -53,22 +52,20 @@ export class VehicleView {
     );
     this.roll = expSmooth(this.roll, rollTarget, JUICE_TUNING.roll.lerpRate, dt);
 
+    // Weight-transfer pitch only — no suspension bob. Accelerating lifts
+    // the nose (positive rotation.x tips the front, at -Z, upward);
+    // braking dips it. expSmooth eases toward whichever target is current
+    // and never overshoots, so letting off the accelerator/brake settles
+    // back to level in one smooth motion instead of oscillating.
     const pitchTarget = clamp(
-      -state.acceleration * JUICE_TUNING.pitch.radiansPerAcceleration,
+      state.acceleration * JUICE_TUNING.pitch.radiansPerAcceleration,
       -JUICE_TUNING.pitch.maxAngleRad,
       JUICE_TUNING.pitch.maxAngleRad
     );
     this.pitch = expSmooth(this.pitch, pitchTarget, JUICE_TUNING.pitch.lerpRate, dt);
 
-    this.bobPhase += dt * JUICE_TUNING.bob.frequencyHz * Math.PI * 2;
-    const speedRatio = clamp(state.speed / state.maxSpeed, 0, 1);
-    const bobAmplitude =
-      JUICE_TUNING.bob.amplitudeMeters * (1 + speedRatio * JUICE_TUNING.bob.speedAmplitudeBoost);
-    const bobOffset = Math.sin(this.bobPhase) * bobAmplitude;
-
     this.tiltGroup.rotation.z = this.roll;
     this.tiltGroup.rotation.x = this.pitch;
-    this.tiltGroup.position.y = bobOffset;
   }
 
   dispose(): void {

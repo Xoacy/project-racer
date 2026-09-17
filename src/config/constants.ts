@@ -5,7 +5,9 @@
  */
 
 /** Purely cosmetic vehicle-view animation — NOT physics. Drives the
- *  roll/pitch/bob procedural juice described in the design brief. */
+ *  roll/pitch procedural juice described in the design brief. No
+ *  suspension bob: the car stays level except for weight-transfer pitch
+ *  and steering roll. */
 export const JUICE_TUNING = {
   /** Roll (bank) applied while steering laterally. */
   roll: {
@@ -18,19 +20,15 @@ export const JUICE_TUNING = {
     /** Exponential-smoothing rate (1/seconds) for how fast roll eases in/out. */
     lerpRate: 7,
   },
-  /** Pitch (nose up/down) applied under acceleration/braking. */
+  /** Pitch (nose up/down) applied under acceleration/braking — weight
+   *  transfer, not suspension bounce: accelerating lifts the nose,
+   *  braking dips it, and it settles back to level (never past it) once
+   *  neither is happening. */
   pitch: {
     maxAngleRad: 0.09,
     /** Radians of pitch per (m/s^2) of forward acceleration, before clamping. */
     radiansPerAcceleration: 0.012,
     lerpRate: 6,
-  },
-  /** Continuous idle suspension bob, sine-driven. */
-  bob: {
-    amplitudeMeters: 0.035,
-    frequencyHz: 2.2,
-    /** How much forward speed (ratio 0..1 of vehicle max speed) adds to bob amplitude. */
-    speedAmplitudeBoost: 0.6,
   },
   /** Camera shake / FOV kick placeholders — cheap wins to try once the feel
    *  is validated; wired but subtle by default. */
