@@ -13,6 +13,12 @@ export class SceneManager {
   private hemiLight: THREE.HemisphereLight;
   private sunLight: THREE.DirectionalLight;
 
+  private textureLoader = new THREE.TextureLoader();
+  private skyTextureCache = new Map<string, THREE.Texture>();
+  /** Guards against a slow texture load from a previous map resolving
+   *  after a newer applyTheme() call has already moved on. */
+  private currentSkyTexturePath: string | null = null;
+
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -42,9 +48,39 @@ export class SceneManager {
   }
 
   /** Applies a map's theme colors to sky/fog/lighting. Called once per run. */
-  applyTheme(theme: { skyColor: number; fogColor: number; fogNear: number; fogFar: number }): void {
-    this.scene.background = new THREE.Color(theme.skyColor);
+  applyTheme(theme: {
+    skyColor: number;
+    skyTexturePath?: string;
+    fogColor: number;
+    fogNear: number;
+    fogFar: number;
+  }): void {
     this.scene.fog = new THREE.Fog(theme.fogColor, theme.fogNear, theme.fogFar);
+
+    const path = theme.skyTexturePath ?? null;
+    this.currentSkyTexturePath = path;
+
+    // Flat color first — either the permanent background (no texture set)
+    // or a placeholder shown while the much heavier texture loads in.
+    this.scene.background = new THREE.Color(theme.skyColor);
+    if (!path) return;
+
+    const cached = this.skyTextureCache.get(path);
+    if (cached) {
+      this.scene.background = cached;
+      return;
+    }
+
+    this.textureLoader.load(path, (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      this.skyTextureCache.set(path, texture);
+      // Only apply if the player hasn't already moved to a different map's
+      // run while this was loading.
+      if (this.currentSkyTexturePath === path) {
+        this.scene.background = texture;
+      }
+    });
   }
 
   private handleResize = (): void => {
@@ -61,6 +97,8 @@ export class SceneManager {
 
   dispose(): void {
     window.removeEventListener('resize', this.handleResize);
+    this.skyTextureCache.forEach((texture) => texture.dispose());
+    this.skyTextureCache.clear();
     this.renderer.dispose();
   }
 }

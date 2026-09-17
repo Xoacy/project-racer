@@ -16,6 +16,7 @@ export const desertNoon: MapConfig = {
     shoulderColor: 0x6b5b45,
     groundColor: 0xd8a75c,
     skyColor: 0xa8dadc,
+    skyTexturePath: 'textures/sky.jpg',
     fogColor: 0xdcc48e,
     fogNear: 70,
     fogFar: 210,

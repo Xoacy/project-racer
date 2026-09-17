@@ -20,7 +20,14 @@ export interface MapConfig {
     centerDividerColor: number;
     shoulderColor: number;
     groundColor: number;
+    /** Flat fallback sky color — always used while `skyTexturePath` (if
+     *  set) is still loading, and permanently if it's left unset. */
     skyColor: number;
+    /** Optional equirectangular sky texture (relative to /public, e.g.
+     *  'textures/sky.jpg'), rendered as the scene background instead of
+     *  the flat `skyColor`. Left unset, a map just gets the flat color —
+     *  this is purely additive, no map is required to use one. */
+    skyTexturePath?: string;
     fogColor: number;
     fogNear: number;
     fogFar: number;

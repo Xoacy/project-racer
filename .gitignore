@@ -4,3 +4,8 @@ dist/
 *.log
 .vite/
 *.tsbuildinfo
+
+# Raw/source art (HDRIs, unprocessed exports, etc.) — kept on disk for
+# reprocessing but never committed or shipped; public/ holds only the
+# already-converted, web-sized assets the game actually loads.
+/art-source/
