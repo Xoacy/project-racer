@@ -36,6 +36,15 @@ export class VehicleView {
   }
 
   private setModel(object: THREE.Object3D): void {
+    // GLTFLoader leaves every mesh with castShadow/receiveShadow off, so a
+    // real model would float shadowless over the road while the
+    // placeholder box (which sets these itself) did not.
+    object.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
     this.modelContainer.clear();
     this.modelContainer.add(object);
   }

@@ -1,12 +1,17 @@
 import type { VehicleConfig } from './types';
 
-/** Second vehicle, purely to prove the roster is data-driven: heavier,
- *  faster top speed, slower handling, no code duplicated from sedanHero. */
+/** Second vehicle, heavier and faster than sedanHero with slower
+ *  handling — and the first one running a real model instead of a
+ *  placeholder box. `dimensions` are measured off that model rather than
+ *  picked by feel, so the collision box matches what's on screen. */
 export const muscleBrute: VehicleConfig = {
   id: 'muscle_brute',
   name: 'Muscle Brute',
-  dimensions: { width: 2.0, height: 1.35, length: 4.6 },
-  placeholderColor: 0x1d3557,
+  modelPath: 'models/vehicles/muscle_brute.glb',
+  dimensions: { width: 1.96, height: 1.34, length: 4.92 },
+  // Matches the model's body paint, so the select-screen swatch (which
+  // reads this) agrees with the car you actually get.
+  placeholderColor: 0xa3251f,
   physics: {
     maxSpeed: 52,
     acceleration: 11,
