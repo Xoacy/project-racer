@@ -9,16 +9,26 @@
  *  suspension bob: the car stays level except for weight-transfer pitch
  *  and steering roll. */
 export const JUICE_TUNING = {
-  /** Roll (bank) applied while steering laterally. */
+  /** Roll (bank) applied while steering laterally. Tuned for a stiff
+   *  suspension: enough lean to carry weight and motion, not enough to
+   *  read as a soft, wallowing body. */
   roll: {
-    maxAngleRad: 0.16,
+    /** ~2.9°. A real car on firm suspension rolls a couple of degrees in
+     *  hard cornering; much past this and it starts to look like it's
+     *  banking rather than leaning. */
+    maxAngleRad: 0.05,
     /** Radians of roll per (m/s) of lateral velocity, before clamping to
      *  maxAngleRad — tuned so max roll lands near a typical vehicle's
      *  lateralMaxSpeed (see VehicleConfig.physics), not far below it, so
-     *  gentle nudges and full-deflection steering visibly feel different. */
-    radiansPerLateralSpeed: 0.02,
-    /** Exponential-smoothing rate (1/seconds) for how fast roll eases in/out. */
-    lerpRate: 7,
+     *  gentle nudges and full-deflection steering visibly feel different
+     *  instead of both pinning at the cap. */
+    radiansPerLateralSpeed: 0.006,
+    /** Exponential-smoothing rate (1/seconds) for how fast roll eases
+     *  in/out. Higher reads as a stiffer anti-roll bar: the body takes
+     *  its set quickly and returns to level quickly. Safe to raise —
+     *  expSmooth approaches its target asymptotically, so unlike a
+     *  spring it can't overshoot and wobble no matter how stiff. */
+    lerpRate: 9,
   },
   /** Pitch (nose up/down) applied under acceleration/braking — weight
    *  transfer, not suspension bounce: accelerating lifts the nose,
