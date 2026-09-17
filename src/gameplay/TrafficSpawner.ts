@@ -4,7 +4,7 @@ import { createPlaceholderBox } from '@/render/PlaceholderFactory';
 import { WORLD } from '@/config/constants';
 import { randInt, randRange } from '@/utils/MathUtils';
 import { NpcDriver, type NpcNeighbor } from './NpcDriver';
-import { computeLaneGroups, findLaneGroup, type LaneGroup } from './LaneDirections';
+import { buildLaneDirections, computeLaneGroups, findLaneGroup, type LaneGroup, type TrafficDirection } from './LaneDirections';
 import type { TrafficInstance } from './types';
 
 const SPAWN_Z = -140;
@@ -26,20 +26,22 @@ const LANE_REPEAT_AVOID = 2; // don't spawn in the same lane more than this many
  * frame as everything else, so gaps between traffic instances stay
  * physically meaningful for the AI's own following logic.
  *
- * A map's `traffic.laneDirections` is the only thing that distinguishes a
- * one-way map from a two-way one — this class has no notion of "mode",
- * it just spawns each vehicle into whichever lane group its spawn lane
- * belongs to (see LaneDirections.ts).
+ * A map's `traffic.type` ("Tipo de Tráfego") is the only thing that
+ * distinguishes a one-way map from a two-way one — this class has no
+ * notion of "mode", it just spawns each vehicle into whichever lane group
+ * its spawn lane belongs to (see LaneDirections.ts).
  */
 export class TrafficSpawner {
   readonly root = new THREE.Group();
   private active: TrafficInstance[] = [];
   private distanceSinceLastSpawn = 0;
   private recentLanes: number[] = [];
+  private laneDirections: TrafficDirection[];
   private laneGroups: LaneGroup[];
 
   constructor(private map: MapConfig) {
-    this.laneGroups = computeLaneGroups(map.traffic.laneDirections);
+    this.laneDirections = buildLaneDirections(map.traffic.type, map.lanes.count);
+    this.laneGroups = computeLaneGroups(this.laneDirections);
   }
 
   update(dt: number, playerSpeed: number, spawnIntervalFactor: number): void {
@@ -84,7 +86,7 @@ export class TrafficSpawner {
     this.recentLanes.push(lane);
     if (this.recentLanes.length > LANE_REPEAT_AVOID) this.recentLanes.shift();
 
-    const direction = this.map.traffic.laneDirections[lane];
+    const direction = this.laneDirections[lane];
     const laneGroup = findLaneGroup(this.laneGroups, lane);
     const isOncoming = direction === -1;
 

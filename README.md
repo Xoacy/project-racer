@@ -125,19 +125,21 @@ E registra em `src/config/vehicles/index.ts` (importar + adicionar no array `VEH
 
 Mesma lógica em `src/config/maps/`: cria um arquivo satisfazendo `MapConfig` (cores do tema, densidade de trânsito/cenário, multiplicador de dificuldade) e registra em `src/config/maps/index.ts`. Toda pista tem exatamente 4 faixas (`lanes.count: 4`) — isso é validado em tempo de carregamento.
 
-### Modos de tráfego (mão única vs. mão dupla)
+### Tipo de Tráfego (mão única vs. mão dupla)
 
-Um único array por mapa — `traffic.laneDirections` (4 entradas, uma por faixa: `1` = mesmo sentido do jogador, `-1` = contramão) — define o modo de tráfego inteiro. Não existe um "modo 1" e "modo 2" no código: é a mesma lógica de IA/colisão/renderização em ambos os casos, só reagindo a esse array.
+Cada mapa escolhe seu próprio `traffic.type` — esse é o campo que define o modo de tráfego inteiro, independente de qualquer outro mapa:
 
 ```ts
-laneDirections: [1, 1, 1, 1]     // highwayDusk — 4 faixas, mesmo sentido
-laneDirections: [1, 1, -1, -1]   // desertNoon — mão dupla, faixas 2-3 na contramão
+type: 'one-way'   // highwayDusk — as 4 faixas no mesmo sentido do jogador
+type: 'two-way'   // desertNoon — mão dupla
 ```
+
+Não existe um "modo 1" e "modo 2" no código: `buildLaneDirections` (em `gameplay/LaneDirections.ts`) é o **único lugar** que traduz esse tipo pra um sentido por faixa, com a convenção fixa: em `'two-way'`, a metade **esquerda** das faixas é a contramão e a metade **direita** é o sentido do jogador (faixas 0-1 contramão, 2-3 sentido do jogador, olhando a pista de trás pra frente como o jogador vê). Como essa tradução é centralizada, nenhum mapa consegue definir a lógica de sentido "ao contrário" por engano — antes, quando cada mapa escrevia esse array à mão, foi exatamente esse tipo de inversão que aconteceu.
 
 O que isso muda sozinho, sem nenhum branch de "modo" em lugar nenhum:
 
 - `Track.ts` desenha uma linha dupla sólida (`theme.centerDividerColor`) exatamente onde o sentido muda, e faixa pontilhada normal em todo o resto.
-- `NpcDriver` só considera veículos do próprio sentido pra seguir (IDM) ou pra checar segurança de troca de faixa, e só escolhe faixa-alvo dentro do intervalo contíguo de faixas do seu próprio sentido (`allowedLaneMin`/`allowedLaneMax`, calculado por `gameplay/LaneDirections.ts` a partir do array) — nunca atravessa pra contramão.
+- `NpcDriver` só considera veículos do próprio sentido pra seguir (IDM) ou pra checar segurança de troca de faixa, e só escolhe faixa-alvo dentro do intervalo contíguo de faixas do seu próprio sentido (`allowedLaneMin`/`allowedLaneMax`, calculado por `gameplay/LaneDirections.ts`) — nunca atravessa pra contramão.
 - `TrafficSpawner` inverte o sinal da contribuição de um NPC pro scroll compartilhado quando ele é contramão (`playerSpeed + speed` em vez de `playerSpeed - speed`), o que já faz a aproximação de frente ler como rápida e perigosa — a colisão em si não precisa de nenhuma lógica especial, é o mesmo `CollisionSystem` de sempre.
 - O jogador continua podendo dirigir pra qualquer uma das 4 faixas, incluindo a contramão — isso é proposital (é o risco/habilidade de dirigir em mão dupla), só os NPCs são presos ao próprio sentido.
 

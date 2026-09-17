@@ -11,10 +11,8 @@ for (const map of MAPS) {
   if (map.lanes.count !== 4) {
     throw new Error(`Map "${map.id}" has ${map.lanes.count} lanes — every map must have exactly 4.`);
   }
-  if (map.traffic.laneDirections.length !== map.lanes.count) {
-    throw new Error(
-      `Map "${map.id}"'s traffic.laneDirections has ${map.traffic.laneDirections.length} entries, expected ${map.lanes.count} (one per lane).`
-    );
+  if (map.traffic.type === 'two-way' && map.lanes.count % 2 !== 0) {
+    throw new Error(`Map "${map.id}" is two-way but has an odd lane count (${map.lanes.count}) — can't split evenly.`);
   }
 }
 

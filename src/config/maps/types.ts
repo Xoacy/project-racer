@@ -1,4 +1,4 @@
-import type { TrafficDirection } from '@/gameplay/LaneDirections';
+import type { TrafficType } from '@/gameplay/LaneDirections';
 
 /**
  * Data-driven map/track definition. Adding a new map means adding one file
@@ -16,8 +16,7 @@ export interface MapConfig {
     /** Divider between two lanes carrying opposite traffic directions —
      *  rendered as a solid double line instead of a dashed one. Present
      *  on every map for type-uniformity, but only ever drawn on a map
-     *  whose `traffic.laneDirections` actually contains a direction
-     *  change (a two-way map). */
+     *  whose `traffic.type` is 'two-way'. */
     centerDividerColor: number;
     shoulderColor: number;
     groundColor: number;
@@ -30,8 +29,7 @@ export interface MapConfig {
   /** Every map has exactly 4 lanes (a fixed rule of the game, not just a
    *  default) — `count` stays an explicit field rather than a hardcoded
    *  "4" sprinkled through the code so the rest of the game never assumes
-   *  a specific number, and so `traffic.laneDirections` has something to
-   *  be validated against (see config/maps/index.ts). */
+   *  a specific number (see config/maps/index.ts for the validation). */
   lanes: {
     count: number;
     width: number; // meters
@@ -54,17 +52,18 @@ export interface MapConfig {
     baseSpawnInterval: number;
     /** Traffic vehicles' forward speed range, in m/s (their own cruise
      *  pace — how fast they actually close in on the player depends on
-     *  direction too, see `laneDirections`). */
+     *  direction too, see `type`). */
     minSpeed: number;
     maxSpeed: number;
 
-    /** One entry per lane (must have exactly `lanes.count` entries, left
-     *  to right): 1 = same direction as the player, -1 = oncoming. All
-     *  1s is "mode 1" (4 lanes, one direction); e.g. [1,1,-1,-1] is
-     *  "mode 2" (two-way, lanes 0-1 the player's way, 2-3 oncoming). This
-     *  one array is the entire definition of a map's traffic mode — see
-     *  gameplay/LaneDirections.ts for how NPCs use it. */
-    laneDirections: readonly TrafficDirection[];
+    /** "Tipo de Tráfego": the traffic-flow layout this map uses —
+     *  'one-way' (every lane runs the same way as the player) or
+     *  'two-way' (half the lanes are oncoming). This one setting is the
+     *  entire definition of a map's traffic mode; see
+     *  gameplay/LaneDirections.ts (buildLaneDirections) for the fixed,
+     *  single-source-of-truth rule each option expands into, and for how
+     *  NPCs use the result. Every map picks its own independently. */
+    type: TrafficType;
 
     /** Chance [0,1] that an NPC's periodic lane-change check actually
      *  results in an attempt — randomized per-NPC between these bounds

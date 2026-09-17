@@ -1,8 +1,8 @@
 import type { MapConfig } from './types';
 
-/** Traffic mode 1: all 4 lanes run the same direction as the player —
- *  see desertNoon.ts for the two-way counterpart. Both use the exact same
- *  gameplay code; only `traffic.laneDirections` differs. */
+/** Tipo de Tráfego: mão única — all 4 lanes run the same direction as the
+ *  player. See desertNoon.ts for the mão dupla counterpart; both use the
+ *  exact same gameplay code, only `traffic.type` differs. */
 export const highwayDusk: MapConfig = {
   id: 'highway_dusk',
   name: 'Highway Dusk',
@@ -28,7 +28,7 @@ export const highwayDusk: MapConfig = {
     baseSpawnInterval: 40,
     minSpeed: 10,
     maxSpeed: 24,
-    laneDirections: [1, 1, 1, 1],
+    type: 'one-way',
     laneChangeChance: { min: 0.15, max: 0.5 },
     safeFollowSeconds: 1,
   },

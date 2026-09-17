@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { MapConfig } from '@/config/maps';
 import { createSurfaceMaterial } from '@/render/MaterialFactory';
 import { WORLD } from '@/config/constants';
+import { buildLaneDirections } from './LaneDirections';
 
 interface RoadSegment {
   group: THREE.Group;
@@ -68,7 +69,7 @@ export class Track {
 
     const dashedLineMaterial = createSurfaceMaterial({ color: this.map.theme.laneLineColor });
     const centerLineMaterial = createSurfaceMaterial({ color: this.map.theme.centerDividerColor });
-    const laneDirections = this.map.traffic.laneDirections;
+    const laneDirections = buildLaneDirections(this.map.traffic.type, this.map.lanes.count);
 
     for (let lane = 1; lane < this.map.lanes.count; lane++) {
       const x = -this.roadWidth / 2 + lane * this.map.lanes.width;

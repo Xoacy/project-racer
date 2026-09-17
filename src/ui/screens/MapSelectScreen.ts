@@ -20,11 +20,11 @@ export class MapSelectScreen implements Screen {
       const card = document.createElement('button');
       card.className = 'card';
       card.style.setProperty('--accent', `#${map.theme.skyColor.toString(16).padStart(6, '0')}`);
-      const isTwoWay = map.traffic.laneDirections.includes(-1);
+      const trafficTypeLabel = map.traffic.type === 'two-way' ? 'Mão dupla' : 'Mão única';
       card.innerHTML = `
         <div class="card__swatch"></div>
         <div class="card__name">${map.name}</div>
-        <div class="stat-row"><span>Modo</span>${isTwoWay ? 'Mão dupla' : 'Mão única'}</div>
+        <div class="stat-row"><span>Tipo de Tráfego</span>${trafficTypeLabel}</div>
         <div class="stat-row"><span>Dificuldade</span>${barHtml(map.difficultyMultiplier, 1.5)}</div>
       `;
       card.addEventListener('click', () => {
