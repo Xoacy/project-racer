@@ -17,6 +17,15 @@ export const desertNoon: MapConfig = {
     groundColor: 0xd8a75c,
     skyColor: 0xa8dadc,
     skyTexturePath: 'textures/sky.jpg',
+    // This HDRI's sun sits at azimuth 36°/elevation 29°; yaw swings it
+    // around to straight ahead, pitch tilts it down into the narrow band
+    // of sky the chase camera actually shows.
+    skyRotationDeg: { yaw: 96, pitch: -24 },
+    // Matches the sun's on-screen side (upper right, ahead of the car) so
+    // shadows fall left and back toward the camera. Height is cheated up
+    // from the sun's apparent ~6° elevation to keep shadows short enough
+    // to stay inside the shadow map.
+    sunLightPosition: { x: 6, y: 14, z: -13 },
     fogColor: 0xdcc48e,
     fogNear: 70,
     fogFar: 210,

@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+/** Used by any map that doesn't set `theme.sunLightPosition`. */
+const DEFAULT_SUN_LIGHT_POSITION = new THREE.Vector3(-8, 15, 8);
+
 /**
  * Owns the renderer/scene/root camera and the resize/render-loop plumbing.
  * Gameplay and UI never touch THREE.WebGLRenderer directly — they add/remove
@@ -32,7 +35,7 @@ export class SceneManager {
     this.scene.add(this.hemiLight);
 
     this.sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
-    this.sunLight.position.set(-8, 15, 8);
+    this.sunLight.position.copy(DEFAULT_SUN_LIGHT_POSITION);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.set(1024, 1024);
     this.sunLight.shadow.camera.left = -20;
@@ -51,11 +54,27 @@ export class SceneManager {
   applyTheme(theme: {
     skyColor: number;
     skyTexturePath?: string;
+    skyRotationDeg?: { yaw?: number; pitch?: number };
+    sunLightPosition?: { x: number; y: number; z: number };
     fogColor: number;
     fogNear: number;
     fogFar: number;
   }): void {
     this.scene.fog = new THREE.Fog(theme.fogColor, theme.fogNear, theme.fogFar);
+
+    const sun = theme.sunLightPosition;
+    if (sun) this.sunLight.position.set(sun.x, sun.y, sun.z);
+    else this.sunLight.position.copy(DEFAULT_SUN_LIGHT_POSITION);
+
+    // 'YXZ' so yaw is applied about the world vertical first and pitch
+    // tilts the already-yawed sky — otherwise the two axes interact and
+    // tuning one visibly moves the other.
+    this.scene.backgroundRotation.set(
+      THREE.MathUtils.degToRad(theme.skyRotationDeg?.pitch ?? 0),
+      THREE.MathUtils.degToRad(theme.skyRotationDeg?.yaw ?? 0),
+      0,
+      'YXZ'
+    );
 
     const path = theme.skyTexturePath ?? null;
     this.currentSkyTexturePath = path;

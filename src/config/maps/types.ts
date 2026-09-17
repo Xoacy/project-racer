@@ -28,6 +28,23 @@ export interface MapConfig {
      *  the flat `skyColor`. Left unset, a map just gets the flat color —
      *  this is purely additive, no map is required to use one. */
     skyTexturePath?: string;
+    /** Orientation for `skyTexturePath`, in degrees. An equirectangular
+     *  texture's features land wherever the original capture pointed, so
+     *  without this the sun/interesting side usually ends up behind the
+     *  player. `yaw` spins the sky around the vertical axis to bring it
+     *  into the forward view. `pitch` tilts the sky, which is the only
+     *  way to pull a high sun down into frame (the camera only shows
+     *  ~11° of sky above the horizon) — the cost is that the texture's
+     *  own horizon band gets pushed below the ground plane. */
+    skyRotationDeg?: { yaw?: number; pitch?: number };
+    /** Where the key light sits relative to the car (which stays at the
+     *  origin). On a map with a sky texture, aim this at the side that
+     *  texture's sun is actually on, so shadows fall away from the
+     *  visible sun instead of contradicting it. Height is deliberately
+     *  free to cheat upward from the sun's real elevation: a light as low
+     *  as a near-horizon sun throws shadows far past the shadow map's
+     *  extent. Unset falls back to the neutral default below. */
+    sunLightPosition?: { x: number; y: number; z: number };
     fogColor: number;
     fogNear: number;
     fogFar: number;
