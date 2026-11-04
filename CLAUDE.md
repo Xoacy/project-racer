@@ -54,7 +54,7 @@ Adding a vehicle or map is a config-only change: create one file satisfying `Veh
 
 Follow the conventions established in this repo's history (there is no CONTRIBUTING.md):
 
-- **Commits:** English, lowercase Conventional Commits summary — `feat:`, `fix:`, `tune:`, `docs:` — imperative, no trailing period. Keep the message short: a couple of lines at most, no long explanatory body. End with the `Co-Authored-By:` line for the Claude model used.
+- **Commits:** English, lowercase Conventional Commits summary — `feat:`, `fix:`, `tune:`, `docs:` — imperative, no trailing period. Keep the message short: a couple of lines at most, no long explanatory body. Never add `Co-Authored-By:` or AI-attribution trailers.
 - **Comments:** do not add comments to code unless strictly necessary to explain a non-obvious constraint. No comment blocks, no restating what the code does. (Existing comments are legacy; don't match their style.)
 - **Docs:** `README.md` and `public/models/README.md` are written in Portuguese.
 - **Versioning:** every `feat:`/`fix:`/`tune:` commit bumps `package.json` (minor for features, patch for fixes/tuning) and is tagged `vX.Y.Z` on the same commit. `docs:`-only commits do not bump. Keep `package-lock.json` in sync (`npm install --package-lock-only`).
