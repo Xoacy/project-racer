@@ -19,13 +19,19 @@ export class HUDScreen implements Screen {
     this.element.innerHTML = `
       <div class="hud-top">
         <div class="hud-score" data-score>0 m</div>
-        <div class="hud-speed" data-speed>0 km/h</div>
+        <div class="hud-speed">
+          <span data-speed>0 km/h</span>
+          <span class="hud-speed-bar"><span data-speed-fill></span></span>
+          <span class="hud-rpm"><b data-gear>1</b> <span data-rpm>900 rpm</span></span>
+        </div>
       </div>
       ${
         isTouchDevice
           ? `<div class="hud-controls">
               <button class="hud-btn hud-btn--lane" data-lane-left aria-label="Virar para a esquerda">◀</button>
               <button class="hud-btn hud-btn--brake" data-brake aria-label="Frear">FREIO</button>
+              <button class="hud-btn hud-btn--throttle" data-throttle aria-label="Acelerar">ACEL</button>
+              <button class="hud-btn hud-btn--handbrake" data-handbrake aria-label="Freio de mão">MÃO</button>
               <button class="hud-btn hud-btn--lane" data-lane-right aria-label="Virar para a direita">▶</button>
             </div>`
           : ''
@@ -38,8 +44,12 @@ export class HUDScreen implements Screen {
       eventBus.on('game:score-changed', ({ distanceMeters }) => {
         this.element.querySelector('[data-score]')!.textContent = `${Math.floor(distanceMeters)} m`;
       }),
-      eventBus.on('game:speed-changed', ({ speedKmh }) => {
+      eventBus.on('game:speed-changed', ({ speedKmh, speedRatio, rpm, gear }) => {
         this.element.querySelector('[data-speed]')!.textContent = `${Math.round(speedKmh)} km/h`;
+        this.element.querySelector('[data-rpm]')!.textContent = `${Math.round(rpm)} rpm`;
+        this.element.querySelector('[data-gear]')!.textContent = String(gear);
+        const fill = this.element.querySelector<HTMLElement>('[data-speed-fill]')!;
+        fill.style.width = `${Math.round(speedRatio * 100)}%`;
       })
     );
   }
@@ -48,6 +58,8 @@ export class HUDScreen implements Screen {
     const leftBtn = this.element.querySelector('[data-lane-left]')!;
     const rightBtn = this.element.querySelector('[data-lane-right]')!;
     const brakeBtn = this.element.querySelector('[data-brake]')!;
+    const throttleBtn = this.element.querySelector('[data-throttle]')!;
+    const handbrakeBtn = this.element.querySelector('[data-handbrake]')!;
 
     leftBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
@@ -72,6 +84,22 @@ export class HUDScreen implements Screen {
     brakeBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
       this.inputManager.touchControls.setBrakeButtonHeld(false);
+    });
+    throttleBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      this.inputManager.touchControls.setThrottleButtonHeld(true);
+    });
+    throttleBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.inputManager.touchControls.setThrottleButtonHeld(false);
+    });
+    handbrakeBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      this.inputManager.touchControls.setHandbrakeButtonHeld(true);
+    });
+    handbrakeBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.inputManager.touchControls.setHandbrakeButtonHeld(false);
     });
   }
 

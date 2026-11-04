@@ -3,8 +3,7 @@ import type { VehicleConfig } from '@/config/vehicles';
 import type { PlayerState } from '@/gameplay/types';
 import type { AssetLoader } from '@/core/AssetLoader';
 import { createPlaceholderBox } from './PlaceholderFactory';
-import { JUICE_TUNING } from '@/config/constants';
-import { clamp, expSmooth } from '@/utils/MathUtils';
+import { expSmooth } from '@/utils/MathUtils';
 
 /**
  * Presentation-only wrapper around the player's 3D model. `root` is driven
@@ -22,8 +21,11 @@ export class VehicleView {
 
   private roll = 0;
   private pitch = 0;
+  private wheels: { node: THREE.Object3D; front: boolean }[] = [];
+  private wheelRadius: number;
 
   constructor(private assetLoader: AssetLoader, vehicle: VehicleConfig) {
+    this.wheelRadius = Math.max(0.25, vehicle.dimensions.height * 0.22);
     this.root.add(this.tiltGroup);
     this.tiltGroup.add(this.modelContainer);
     this.setModel(createPlaceholderBox({ ...vehicle.dimensions, color: vehicle.placeholderColor }));
@@ -47,34 +49,36 @@ export class VehicleView {
     });
     this.modelContainer.clear();
     this.modelContainer.add(object);
+    this.collectWheels(object);
+  }
+
+  private collectWheels(object: THREE.Object3D): void {
+    this.wheels = [];
+    object.traverse((child) => {
+      const name = child.name.toLowerCase();
+      if (!name.includes('wheel')) return;
+      child.rotation.order = 'YXZ';
+      this.wheels.push({ node: child, front: name.includes('front') });
+    });
   }
 
   update(dt: number, state: PlayerState): void {
     // Logical position — no smoothing here, PlayerVehicle already did that.
     this.root.position.x = state.currentX;
     this.root.position.z = 0;
+    // Model forward is -Z, so a right-hand yaw is a negative Y rotation.
+    this.root.rotation.y = -state.yaw;
 
-    const rollTarget = clamp(
-      -state.lateralVelocity * JUICE_TUNING.roll.radiansPerLateralSpeed,
-      -JUICE_TUNING.roll.maxAngleRad,
-      JUICE_TUNING.roll.maxAngleRad
-    );
-    this.roll = expSmooth(this.roll, rollTarget, JUICE_TUNING.roll.lerpRate, dt);
-
-    // Weight-transfer pitch only — no suspension bob. Accelerating lifts
-    // the nose (positive rotation.x tips the front, at -Z, upward);
-    // braking dips it. expSmooth eases toward whichever target is current
-    // and never overshoots, so letting off the accelerator/brake settles
-    // back to level in one smooth motion instead of oscillating.
-    const pitchTarget = clamp(
-      state.acceleration * JUICE_TUNING.pitch.radiansPerAcceleration,
-      -JUICE_TUNING.pitch.maxAngleRad,
-      JUICE_TUNING.pitch.maxAngleRad
-    );
-    this.pitch = expSmooth(this.pitch, pitchTarget, JUICE_TUNING.pitch.lerpRate, dt);
-
+    this.roll = expSmooth(this.roll, state.bodyRoll, 12, dt);
+    this.pitch = expSmooth(this.pitch, state.bodyPitch, 12, dt);
     this.tiltGroup.rotation.z = this.roll;
     this.tiltGroup.rotation.x = this.pitch;
+
+    const spin = (-state.speed / this.wheelRadius) * dt;
+    for (const wheel of this.wheels) {
+      wheel.node.rotation.x += spin;
+      if (wheel.front) wheel.node.rotation.y = -state.steerAngle;
+    }
   }
 
   dispose(): void {

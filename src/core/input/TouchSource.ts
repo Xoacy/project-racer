@@ -37,6 +37,14 @@ export class TouchSource implements InputSource {
     this.manager.setBraking(held);
   }
 
+  setThrottleButtonHeld(held: boolean): void {
+    this.manager.setAccelerating(held);
+  }
+
+  setHandbrakeButtonHeld(held: boolean): void {
+    this.manager.setHandbrake(held);
+  }
+
   private handleStart = (e: TouchEvent): void => {
     this.anchorX = e.changedTouches[0].clientX;
     this.tracking = true;

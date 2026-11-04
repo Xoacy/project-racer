@@ -42,7 +42,7 @@ export class Track {
     const material = createSurfaceMaterial({ color: this.map.theme.groundColor });
     const ground = new THREE.Mesh(geometry, material);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.01;
+    ground.position.y = -0.25;
     ground.receiveShadow = true;
     this.root.add(ground);
   }
@@ -83,7 +83,7 @@ export class Track {
           const solidGeometry = new THREE.PlaneGeometry(0.15, this.map.segmentLength);
           const solid = new THREE.Mesh(solidGeometry, centerLineMaterial);
           solid.rotation.x = -Math.PI / 2;
-          solid.position.set(x + offset, 0.01, 0);
+          solid.position.set(x + offset, 0.02, 0);
           group.add(solid);
         }
         continue;
@@ -94,7 +94,7 @@ export class Track {
         const dashGeometry = new THREE.PlaneGeometry(0.15, this.map.segmentLength / (dashCount * 2));
         const dash = new THREE.Mesh(dashGeometry, dashedLineMaterial);
         dash.rotation.x = -Math.PI / 2;
-        dash.position.set(x, 0.01, -this.map.segmentLength / 2 + (d + 0.5) * (this.map.segmentLength / dashCount));
+        dash.position.set(x, 0.02, -this.map.segmentLength / 2 + (d + 0.5) * (this.map.segmentLength / dashCount));
         group.add(dash);
       }
     }

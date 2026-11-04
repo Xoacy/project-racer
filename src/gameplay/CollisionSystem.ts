@@ -13,14 +13,19 @@ const COLLISION_FORGIVENESS = 0.82;
  */
 export class CollisionSystem {
   check(player: PlayerState, playerHalfWidth: number, playerHalfLength: number, traffic: TrafficInstance[]): boolean {
+    const cos = Math.cos(player.yaw);
+    const sin = Math.sin(player.yaw);
     for (const { driver } of traffic) {
-      const distanceZ = Math.abs(driver.z - WORLD.playerZ);
-      const combinedHalfLength = (playerHalfLength + driver.halfLength) * COLLISION_FORGIVENESS;
-      if (distanceZ >= combinedHalfLength) continue;
+      const dx = driver.x - player.currentX;
+      const dz = driver.z - WORLD.playerZ;
+      const localX = dx * cos + dz * sin;
+      const localZ = dx * sin - dz * cos;
 
-      const distanceX = Math.abs(driver.x - player.currentX);
+      const combinedHalfLength = (playerHalfLength + driver.halfLength) * COLLISION_FORGIVENESS;
+      if (Math.abs(localZ) >= combinedHalfLength) continue;
+
       const combinedHalfWidth = (playerHalfWidth + driver.halfWidth) * COLLISION_FORGIVENESS;
-      if (distanceX >= combinedHalfWidth) continue;
+      if (Math.abs(localX) >= combinedHalfWidth) continue;
 
       return true;
     }

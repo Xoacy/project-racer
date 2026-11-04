@@ -7,6 +7,7 @@ import type { VehicleConfig } from './types';
 export const muscleBrute: VehicleConfig = {
   id: 'muscle_brute',
   name: 'Muscle Brute',
+  drivetrain: 'rwd',
   modelPath: 'models/vehicles/muscle_brute.glb',
   dimensions: { width: 1.96, height: 1.34, length: 4.92 },
   // Matches the model's body paint, so the select-screen swatch (which

@@ -4,60 +4,134 @@
  * not where they're used.
  */
 
-/** Purely cosmetic vehicle-view animation — NOT physics. Drives the
- *  roll/pitch procedural juice described in the design brief. No
- *  suspension bob: the car stays level except for weight-transfer pitch
- *  and steering roll. */
+/** Presentation-only camera effects. Body roll/pitch now come from the
+ *  suspension simulation, not from here. */
 export const JUICE_TUNING = {
-  /** Roll (bank) applied while steering laterally. Tuned for a stiff
-   *  suspension: enough lean to carry weight and motion, not enough to
-   *  read as a soft, wallowing body. */
-  roll: {
-    /** ~2.9°. A real car on firm suspension rolls a couple of degrees in
-     *  hard cornering; much past this and it starts to look like it's
-     *  banking rather than leaning. */
-    maxAngleRad: 0.05,
-    /** Radians of roll per (m/s) of lateral velocity, before clamping to
-     *  maxAngleRad — tuned so max roll lands near a typical vehicle's
-     *  lateralMaxSpeed (see VehicleConfig.physics), not far below it, so
-     *  gentle nudges and full-deflection steering visibly feel different
-     *  instead of both pinning at the cap. */
-    radiansPerLateralSpeed: 0.006,
-    /** Exponential-smoothing rate (1/seconds) for how fast roll eases
-     *  in/out. Higher reads as a stiffer anti-roll bar: the body takes
-     *  its set quickly and returns to level quickly. Safe to raise —
-     *  expSmooth approaches its target asymptotically, so unlike a
-     *  spring it can't overshoot and wobble no matter how stiff. */
-    lerpRate: 9,
-  },
-  /** Pitch (nose up/down) applied under acceleration/braking — weight
-   *  transfer, not suspension bounce: accelerating lifts the nose,
-   *  braking dips it, and it settles back to level (never past it) once
-   *  neither is happening. */
-  pitch: {
-    maxAngleRad: 0.09,
-    /** Radians of pitch per (m/s^2) of forward acceleration, before clamping. */
-    radiansPerAcceleration: 0.012,
-    lerpRate: 6,
-  },
-  /** Camera shake / FOV kick placeholders — cheap wins to try once the feel
-   *  is validated; wired but subtle by default. */
   camera: {
     fovBase: 62,
-    fovMaxBoost: 8, // added at max speed ratio
+    fovMaxBoost: 14, // added at max speed ratio
     fovLerpRate: 3,
     followLerpRate: 5,
+    speedPullback: 0.9,
+    shakeAmplitude: 0.035,
+    shakeFrequency: 34,
   },
 };
 
-/** Global difficulty ramp — how fast the "target speed" a run pushes the
- *  player towards climbs over time, and how traffic density scales with it.
- *  A map's `difficultyMultiplier` scales the time axis of this curve. */
+/** Full vehicle simulation tuning: derived mass/geometry plus tire,
+ *  powertrain, brake, aero, suspension and assist parameters. Per-vehicle
+ *  values still come from VehicleConfig (dimensions, maxSpeed,
+ *  acceleration/deceleration, lateralAcceleration, drivetrain). */
+export const VEHICLE_SIM_TUNING = {
+  massPerVolume: 120,
+  frontWeightBias: 0.5,
+  wheelbaseLengthRatio: 0.58,
+  trackWidthRatio: 0.82,
+  cgHeightRatio: 0.33,
+  wheelRadiusHeightRatio: 0.22,
+  wheelInertia: 2,
+  drivenWheelInertia: 12,
+  steer: {
+    maxAngleRad: 0.3,
+    rate: 3.5,
+    returnRate: 5.0,
+    highSpeedLoss: 0.85,
+  },
+  tire: {
+    peakSlipRatio: 0.12,
+    peakSlipAngleRad: 0.14,
+    loadSensitivity: 0.1,
+    gripScale: 0.5,
+    minMu: 0.7,
+    maxMu: 2.2,
+    frontGripFactor: 1,
+    rearGripFactor: 1,
+    relaxationLength: 0.6,
+  },
+  engine: {
+    idleRpm: 900,
+    redlineRpm: 6500,
+    gearRatios: [3.4, 2.2, 1.6, 1.25, 1.0, 0.82],
+    efficiency: 0.9,
+    accelerationMultiplier: 1.7,
+    torqueCurveFloor: 0.35,
+    engineBrakeFactor: 0.06,
+    shiftUpRatio: 0.95,
+    shiftDownRatio: 0.35,
+    shiftTime: 0.22,
+  },
+  brakes: {
+    frontBias: 0.62,
+    absSlipRatio: 0.2,
+    absTorqueFactor: 0.25,
+    handbrakeTorqueFactor: 0.5,
+  },
+  aero: {
+    airDensity: 1.2,
+    dragArea: 0.75,
+    downforceArea: 0.3,
+    rollingResistance: 0.015,
+  },
+  suspension: {
+    targetRollAngleRad: 0.06,
+    dampingRatio: 0.7,
+    arbFrontFactor: 0.15,
+    arbRearFactor: 0.1,
+    rollClampRad: 0.18,
+    pitchClampRad: 0.12,
+  },
+  stability: {
+    enabled: true,
+    yawErrorThreshold: 0.12,
+    correctionGain: 3.0,
+    throttleCutGain: 2.0,
+    maxThrottleCut: 0.7,
+    tractionSlipLimit: 0.25,
+  },
+  limits: {
+    pathAngleRad: 0.5,
+    slipAngleRad: 0.35,
+    headingAngleRad: 0.7,
+    yawRateRad: 2.5,
+  },
+  yawDamping: 0.4,
+  lowSpeedSlipReference: 2.0,
+  differentialLock: 0.25,
+  substepSeconds: 1 / 480,
+};
+
+/** Visual-only tire marks and wheel animation tuning. */
+export const SKID_TUNING = {
+  slipAngleThreshold: 0.08,
+  minSpeed: 8,
+  markWidth: 0.26,
+  markLength: 1.3,
+  spacing: 0.5,
+  poolSize: 160,
+  opacity: 0.35,
+};
+
+/** Visual-only speed streaks around the car at high speed. */
+export const SPEED_LINES_TUNING = {
+  count: 90,
+  minSpeedRatio: 0.25,
+  maxOpacity: 0.5,
+  xSpread: 14,
+  yMin: 0.5,
+  yMax: 7,
+  zNear: -6,
+  zFar: -60,
+  recycleZ: 9,
+  speedScale: 2.2,
+  minLength: 1.5,
+  maxLength: 5,
+};
+
+/** Global difficulty ramp — how traffic density scales over a run. A map's
+ *  `difficultyMultiplier` scales the time axis of this curve. */
 export const DIFFICULTY_CURVE = {
-  /** Seconds of a run before target speed reaches the vehicle's maxSpeed. */
-  secondsToMaxSpeed: 90,
-  /** Fraction of maxSpeed the run starts at. */
-  startSpeedRatio: 0.45,
+  /** Seconds of a run for traffic pressure to reach full difficulty. */
+  rampSeconds: 120,
   /** Traffic spawn interval shrinks by this factor at full difficulty
    *  (e.g. 0.5 = spawns twice as often once fully ramped up). */
   trafficIntervalFactorAtMax: 0.55,
