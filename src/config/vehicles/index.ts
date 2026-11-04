@@ -1,12 +1,15 @@
 import type { VehicleConfig } from './types';
 import { sedanHero } from './sedanHero';
 import { muscleBrute } from './muscleBrute';
+import { hatchSport } from './hatchSport';
+import { suvLuxury } from './suvLuxury';
+import { raceRunner } from './raceRunner';
 
 export type { VehicleConfig } from './types';
 
 /** Registry: this array is the single source of truth for what appears in
  *  the vehicle-select screen. Add a vehicle file, import it, push it here. */
-export const VEHICLES: VehicleConfig[] = [sedanHero, muscleBrute];
+export const VEHICLES: VehicleConfig[] = [sedanHero, muscleBrute, hatchSport, suvLuxury, raceRunner];
 
 export type VehicleId = (typeof VEHICLES)[number]['id'];
 
