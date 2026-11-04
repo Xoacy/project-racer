@@ -3,7 +3,8 @@ import type { InputSource } from './InputTypes';
 
 const LEFT_KEYS = new Set(['ArrowLeft', 'KeyA']);
 const RIGHT_KEYS = new Set(['ArrowRight', 'KeyD']);
-const BRAKE_KEYS = new Set(['ArrowDown', 'KeyS', 'Space']);
+const BRAKE_KEYS = new Set(['ArrowDown', 'KeyS']);
+const HANDBRAKE_KEYS = new Set(['Space']);
 const ACCEL_KEYS = new Set(['ArrowUp', 'KeyW']);
 
 /**
@@ -39,6 +40,8 @@ export class KeyboardSource implements InputSource {
       this.syncLateralInput();
     } else if (BRAKE_KEYS.has(e.code)) {
       this.manager.setBraking(true);
+    } else if (HANDBRAKE_KEYS.has(e.code)) {
+      this.manager.setHandbrake(true);
     } else if (ACCEL_KEYS.has(e.code)) {
       this.manager.setAccelerating(true);
     }
@@ -53,6 +56,8 @@ export class KeyboardSource implements InputSource {
       this.syncLateralInput();
     } else if (BRAKE_KEYS.has(e.code)) {
       this.manager.setBraking(false);
+    } else if (HANDBRAKE_KEYS.has(e.code)) {
+      this.manager.setHandbrake(false);
     } else if (ACCEL_KEYS.has(e.code)) {
       this.manager.setAccelerating(false);
     }

@@ -9,7 +9,7 @@ Corrida infinita estilo *Traffic Racer* — troca de faixas, trânsito para desv
 - **[Three.js](https://threejs.org/)** — motor de renderização (WebGL).
 - **[Vite](https://vitejs.dev/)** — bundler/dev server.
 - **TypeScript** — usado desde o início porque a arquitetura é orientada a dados (configs de veículo/mapa tipados pegam erro de config antes de rodar).
-- **Física arcade "feita à mão"** — sem Rapier/Cannon. Movimentação lateral é livre e contínua (aceleração/desaceleração até uma velocidade lateral máxima, sem snap para faixa nenhuma); aceleração/frenagem longitudinal são curvas simples, não simulação de suspensão/torque.
+- **Física simcade "feita à mão"** — sem Rapier/Cannon. Modelo double-track de 4 rodas a 480 Hz: Pacejka para força longitudinal e lateral, elipse de atrito no slip combinado, relaxamento de pneu, suspensão 3DOF com molas/amortecedores/barras anti-rolagem gerando a carga por roda, Ackermann, diferencial com lock, curva de torque, câmbio automático, ABS, controle de estabilidade e de tração. A velocidade sai do motor/pneus, então o velocímetro mostra o resultado real da simulação.
 - **[Capacitor](https://capacitorjs.com/)** — empacotamento do build web como app Android. *Ainda não configurado* — entra na reta final, depois que o gameplay e a arte estiverem validados.
 - **Modelos 3D**: feitos em Blender, exportados em glTF/glb, carregados via `GLTFLoader`.
 
@@ -36,11 +36,13 @@ npm run preview   # serve o build de produção localmente, pra testar antes de 
 | Ação | Teclado | Touch (mobile) |
 |---|---|---|
 | Virar (livre, sem faixa) | segurar `←`/`→` ou `A`/`D` | arrastar o dedo pela tela, ou botões na HUD |
-| Frear | `↓`/`S`/espaço | botão "FREIO" na HUD |
+| Acelerar | `↑`/`W` | botão "ACEL" na HUD |
+| Frear | `↓`/`S` | botão "FREIO" na HUD |
+| Freio de mão (solta a traseira) | `espaço` | botão "MÃO" na HUD |
 
-A posição lateral é livre e contínua — o carro pode ficar em qualquer ponto da largura da pista, inclusive entre faixas ou encostado numa borda. As faixas são só referência visual (`MapConfig.lanes`), não posições obrigatórias: o carro acelera/desacelera lateralmente conforme o comando, sem "encaixar" em faixa nenhuma.
+A posição lateral é livre e contínua — o carro pode ficar em qualquer ponto da largura da pista, inclusive entre faixas ou encostado numa borda. As faixas são só referência visual (`MapConfig.lanes`), não posições obrigatórias: o carro gira com inércia e desliza lateralmente conforme o comando, sem "encaixar" em faixa nenhuma. Em alta o esterço rende menos (understeer); frear ou puxar o freio de mão solta a traseira e o contra-esterço recupera o carro.
 
-O carro acelera sozinho até um teto de velocidade que sobe com o tempo (curva de dificuldade) — frear é o que você usa pra desviar do trânsito. Tilt (inclinar o celular) já está implementado em `core/input/TiltSource.ts` mas desligado por padrão; é só chamar `requestPermissionAndEnable()` de uma tela de configurações futura.
+A aceleração é manual: segure acelerar, o câmbio troca sozinho e a HUD mostra marcha e rpm. O FOV/riscos de vento/tremor de câmera crescem com a velocidade mostrada no velocímetro. A sensibilidade da direção é ajustável no menu principal (0.6–1.4) e fica salva no navegador. Tilt (inclinar o celular) já está implementado em `core/input/TiltSource.ts` mas desligado por padrão; é só chamar `requestPermissionAndEnable()` de uma tela de configurações futura.
 
 ## Estrutura do projeto
 
@@ -62,18 +64,24 @@ src/
     input/                # teclado, touch (arrastar) e tilt, unificados num InputManager
 
   gameplay/            # LÓGICA PURA — sem THREE.Object3D, só números e regras
-    PlayerVehicle.ts     # estado do jogador: posição lateral livre, velocidade
+    PlayerVehicle.ts     # fachada do jogador: expõe PlayerState a partir do modelo físico
+    vehicle/
+      TireModel.ts         # Pacejka puro + elipse de atrito + carga
+      Suspension.ts        # heave/pitch/roll, molas, amortecedores e ARBs
+      Powertrain.ts        # curva de torque, marchas, final drive, auto shift
     Track.ts              # geração/scroll procedural dos segmentos de pista
     NpcDriver.ts            # IA de um veículo de trânsito: car-following (IDM) + troca de faixa
     TrafficSpawner.ts        # spawn de trânsito, orquestra os NpcDriver com vizinhança compartilhada
     ScenerySpawner.ts         # spawn de props decorativos nas bordas da pista
-    CollisionSystem.ts       # colisão por sobreposição real de X e Z (AABB)
+    CollisionSystem.ts       # colisão AABB no eixo do carro (considera yaw do jogador)
     ScoreSystem.ts            # pontuação e recorde (localStorage)
-    DifficultyManager.ts       # curva de dificuldade (velocidade-alvo, spawn de trânsito)
+    DifficultyManager.ts       # dificuldade por tempo: densidade de trânsito
     RunSession.ts               # amarra tudo isso pra uma partida
 
   render/               # APRESENTAÇÃO — só isso pode depender de gameplay/types.ts
-    VehicleView.ts        # a camada de "juice": roll/pitch/bounce procedural
+    VehicleView.ts        # a camada de "juice": yaw/roll/pitch e rodas
+    SkidMarks.ts          # marcas de pneu quando a traseira desliza
+    SpeedLines.ts         # riscos de vento em alta velocidade
     CameraRig.ts            # câmera de perseguição com suavização
     MaterialFactory.ts       # ponto único de decisão do shading (flat vs. textura)
     PlaceholderFactory.ts     # caixas/cones coloridos no lugar dos modelos finais
@@ -105,16 +113,17 @@ import type { VehicleConfig } from './types';
 export const meuCarro: VehicleConfig = {
   id: 'meu_carro',
   name: 'Meu Carro',
+  drivetrain: 'rwd',            // fwd | rwd | awd
   // modelPath: 'models/vehicles/meu_carro.glb', // deixa comentado até exportar do Blender
   dimensions: { width: 1.9, height: 1.3, length: 4.3 },
   placeholderColor: 0x2a9d8f,
   physics: {
-    maxSpeed: 48,             // m/s
-    acceleration: 13,         // m/s^2
-    deceleration: 20,         // m/s^2
-    lateralMaxSpeed: 8,       // m/s, velocidade lateral máxima
-    lateralAcceleration: 28,  // m/s^2
-    lateralDeceleration: 32,  // m/s^2
+    maxSpeed: 48,             // m/s, teto de velocidade
+    acceleration: 13,         // escala a curva de torque do motor
+    deceleration: 20,         // escala o torque de freio
+    lateralMaxSpeed: 8,       // m/s, limite do deslocamento lateral
+    lateralAcceleration: 28,  // define o mu dos pneus
+    lateralDeceleration: 32,  // rigidez de esterço dos pneus
   },
 };
 ```

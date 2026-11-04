@@ -6,6 +6,7 @@
 export interface VehicleConfig {
   id: string;
   name: string;
+  drivetrain: 'fwd' | 'rwd' | 'awd';
 
   /** Path to the .gltf/.glb file, relative to /public. Left undefined while
    *  no model exists yet -> the game falls back to a placeholder box. */
@@ -32,9 +33,7 @@ export interface VehicleConfig {
     /** How fast (m/s^2) lateral speed ramps up toward the input-driven
      *  target — higher = snappier steering response. */
     lateralAcceleration: number;
-    /** How fast (m/s^2) lateral speed decays back toward 0 as steering
-     *  input eases off or reverses — how quickly the car "settles" instead
-     *  of continuing to drift sideways once you let go. */
+    /** Tire steering stiffness proxy — higher = snappier turn-in. */
     lateralDeceleration: number;
   };
 }

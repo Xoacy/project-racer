@@ -16,14 +16,21 @@ const LOOK_AHEAD_HEIGHT = 0;
 export class CameraRig {
   private currentX = 0;
   private currentFov = JUICE_TUNING.camera.fovBase;
+  private elapsed = 0;
 
   update(dt: number, camera: THREE.PerspectiveCamera, state: PlayerState): void {
+    this.elapsed += dt;
+    const speedRatio = clamp(state.speed / state.maxSpeed, 0, 1);
     this.currentX = expSmooth(this.currentX, state.currentX, JUICE_TUNING.camera.followLerpRate, dt);
 
-    camera.position.set(this.currentX + FOLLOW_OFFSET.x, FOLLOW_OFFSET.y, FOLLOW_OFFSET.z);
+    const shake = speedRatio * speedRatio * JUICE_TUNING.camera.shakeAmplitude;
+    camera.position.set(
+      this.currentX + Math.sin(this.elapsed * JUICE_TUNING.camera.shakeFrequency) * shake,
+      FOLLOW_OFFSET.y + Math.cos(this.elapsed * JUICE_TUNING.camera.shakeFrequency * 0.83) * shake * 0.6,
+      FOLLOW_OFFSET.z + speedRatio * JUICE_TUNING.camera.speedPullback
+    );
     camera.lookAt(this.currentX, LOOK_AHEAD_HEIGHT, LOOK_AHEAD_Z);
 
-    const speedRatio = clamp(state.speed / state.maxSpeed, 0, 1);
     const fovTarget = JUICE_TUNING.camera.fovBase + speedRatio * JUICE_TUNING.camera.fovMaxBoost;
     this.currentFov = expSmooth(this.currentFov, fovTarget, JUICE_TUNING.camera.fovLerpRate, dt);
     if (Math.abs(camera.fov - this.currentFov) > 0.01) {

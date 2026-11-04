@@ -3,6 +3,7 @@ import type { VehicleConfig } from './types';
 export const suvLuxury: VehicleConfig = {
   id: 'suv_luxury',
   name: 'SUV Luxury',
+  drivetrain: 'awd',
   modelPath: 'models/vehicles/suv_luxury.glb',
   dimensions: { width: 1.9, height: 1.647, length: 3.61 },
   placeholderColor: 0x264653,

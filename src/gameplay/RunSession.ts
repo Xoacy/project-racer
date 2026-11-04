@@ -12,6 +12,8 @@ import { ScoreSystem } from './ScoreSystem';
 import { DifficultyManager } from './DifficultyManager';
 import { VehicleView } from '@/render/VehicleView';
 import { CameraRig } from '@/render/CameraRig';
+import { SkidMarks } from '@/render/SkidMarks';
+import { SpeedLines } from '@/render/SpeedLines';
 import { eventBus } from '@/core/EventBus';
 
 /**
@@ -31,7 +33,8 @@ export class RunSession {
   private difficulty: DifficultyManager;
   private vehicleView: VehicleView;
   private cameraRig = new CameraRig();
-  private vehicleMaxSpeed: number;
+  private skidMarks: SkidMarks;
+  private speedLines: SpeedLines;
 
   private ended = false;
 
@@ -42,7 +45,6 @@ export class RunSession {
     vehicleConfig: VehicleConfig,
     mapConfig: MapConfig
   ) {
-    this.vehicleMaxSpeed = vehicleConfig.physics.maxSpeed;
     this.sceneManager.applyTheme(mapConfig.theme);
 
     this.player = new PlayerVehicle(vehicleConfig, mapConfig);
@@ -51,11 +53,15 @@ export class RunSession {
     this.scenery = new ScenerySpawner(mapConfig, this.track.roadHalfWidth);
     this.difficulty = new DifficultyManager(mapConfig);
     this.vehicleView = new VehicleView(assetLoader, vehicleConfig);
+    this.skidMarks = new SkidMarks(vehicleConfig.dimensions);
+    this.speedLines = new SpeedLines();
 
     this.sceneManager.scene.add(this.track.root);
     this.sceneManager.scene.add(this.traffic.root);
     this.sceneManager.scene.add(this.scenery.root);
     this.sceneManager.scene.add(this.vehicleView.root);
+    this.sceneManager.scene.add(this.skidMarks.root);
+    this.sceneManager.scene.add(this.speedLines.root);
 
     eventBus.emit('game:run-started', { vehicleId: vehicleConfig.id, mapId: mapConfig.id });
   }
@@ -67,10 +73,11 @@ export class RunSession {
     this.difficulty.update(dt);
 
     const lateralInput = this.inputManager.getLateralInput();
-    const braking = this.inputManager.isBraking();
-    const targetSpeed = this.difficulty.getTargetSpeed(this.vehicleMaxSpeed);
+    const throttle = this.inputManager.getThrottle();
+    const brake = this.inputManager.getBrakeInput();
+    const handbrake = this.inputManager.isHandbraking();
 
-    this.player.update(dt, lateralInput, braking, targetSpeed);
+    this.player.update(dt, lateralInput, throttle, brake, handbrake);
     const state = this.player.getState();
 
     this.track.update(dt, state.speed);
@@ -78,6 +85,8 @@ export class RunSession {
     this.scenery.update(dt, state.speed);
 
     this.vehicleView.update(dt, state);
+    this.skidMarks.update(dt, state);
+    this.speedLines.update(dt, state);
     this.cameraRig.update(dt, this.sceneManager.camera, state);
 
     this.score.update(state.distanceTraveled);
@@ -85,6 +94,8 @@ export class RunSession {
     eventBus.emit('game:speed-changed', {
       speedKmh: state.speed * 3.6,
       speedRatio: state.speed / state.maxSpeed,
+      rpm: state.rpm,
+      gear: state.gear,
     });
 
     const playerHalfWidth = this.player.dimensions.width / 2;
@@ -109,10 +120,14 @@ export class RunSession {
     this.sceneManager.scene.remove(this.traffic.root);
     this.sceneManager.scene.remove(this.scenery.root);
     this.sceneManager.scene.remove(this.vehicleView.root);
+    this.sceneManager.scene.remove(this.skidMarks.root);
+    this.sceneManager.scene.remove(this.speedLines.root);
     this.track.dispose();
     this.traffic.dispose();
     this.scenery.dispose();
     this.vehicleView.dispose();
+    this.skidMarks.dispose();
+    this.speedLines.dispose();
     this.sceneManager.scene.fog = null;
   }
 }

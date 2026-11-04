@@ -5,9 +5,15 @@ export interface PlayerState {
   currentX: number; // meters, free lateral position (0 = road center)
   speed: number; // m/s
   distanceTraveled: number; // meters
-  lateralVelocity: number; // m/s, for roll juice
-  acceleration: number; // m/s^2 signed, for pitch juice
+  yaw: number; // radians, positive = pointing right
+  steerAngle: number; // radians, positive = steering right
+  slipAngle: number; // radians, positive = sliding right
+  handbrake: boolean;
   maxSpeed: number;
+  bodyRoll: number; // radians, positive = left side down
+  bodyPitch: number; // radians, positive = nose up
+  rpm: number;
+  gear: number;
 }
 
 export interface TrafficInstance {

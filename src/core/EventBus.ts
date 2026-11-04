@@ -22,7 +22,7 @@ export interface GameEvents {
   // --- Game -> UI notifications ---
   'game:state-changed': { state: string };
   'game:score-changed': { score: number; distanceMeters: number };
-  'game:speed-changed': { speedKmh: number; speedRatio: number };
+  'game:speed-changed': { speedKmh: number; speedRatio: number; rpm: number; gear: number };
   'game:run-started': { vehicleId: VehicleId; mapId: MapId };
   'game:run-ended': { score: number; distanceMeters: number; isNewHighScore: boolean };
   'game:collision': { atDistanceMeters: number };

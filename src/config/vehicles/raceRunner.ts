@@ -3,6 +3,7 @@ import type { VehicleConfig } from './types';
 export const raceRunner: VehicleConfig = {
   id: 'race_runner',
   name: 'Race Runner',
+  drivetrain: 'awd',
   modelPath: 'models/vehicles/race_runner.glb',
   dimensions: { width: 1.9, height: 1.071, length: 3.741 },
   placeholderColor: 0xf4a261,
